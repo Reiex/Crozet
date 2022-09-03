@@ -146,7 +146,7 @@ namespace crz
 	{
 		assert(frameCount * _channelCount == _samples.size());
 
-		_samplesMutex.lock();
+		std::unique_lock lock(_samplesMutex);
 
 		if (_samplesReady)
 		{
@@ -158,7 +158,7 @@ namespace crz
 			std::fill_n(output, _samples.size(), 0);
 		}
 
-		_samplesMutex.unlock();
+		_sampleCondition.notify_one();
 
 		return 0;
 	}
@@ -167,60 +167,58 @@ namespace crz
 	{
 		while (!_stopThread)
 		{
-			if (!_samplesReady)
+			std::unique_lock lock(_samplesMutex);
+			_sampleCondition.wait(lock, [&] { return !_samplesReady; });
+
+			_timelineMutex.lock();
+
+			std::fill(_samples.begin(), _samples.end(), 0);
+			std::vector<int32_t> buffer(_samples.size());
+
+			const uint64_t range[2] = { _timelineIndex, _timelineIndex + _frameCount };
+
+			auto itTimeline = _timeline.begin();
+			const auto itTimelineEnd = _timeline.cend();
+			for (; itTimeline != itTimelineEnd; ++itTimeline)
 			{
-				_timelineMutex.lock();
-				_samplesMutex.lock();
+				const uint64_t& timeStart = itTimeline->first;
+				SoundBase* sound = itTimeline->second;
+				const uint64_t sampleCount = sound->getSampleCount(_frequency);
 
-				std::fill(_samples.begin(), _samples.end(), 0);
-				std::vector<int32_t> buffer(_samples.size());
-
-				const uint64_t range[2] = { _timelineIndex, _timelineIndex + _frameCount };
-
-				auto itTimeline = _timeline.begin();
-				const auto itTimelineEnd = _timeline.cend();
-				for (; itTimeline != itTimelineEnd; ++itTimeline)
+				if (timeStart >= range[1])
 				{
-					const uint64_t& timeStart = itTimeline->first;
-					SoundBase* sound = itTimeline->second;
-					const uint64_t sampleCount = sound->getSampleCount(_frequency);
-
-					if (timeStart >= range[1])
-					{
-						break;
-					}
-
-					std::fill(buffer.begin(), buffer.end(), 0);
-					
-					const uint64_t offset = timeStart > range[0] ? timeStart - range[0] : 0;
-					const uint64_t timeFrom = range[0] > timeStart ? range[0] - timeStart : 0;
-					const uint64_t timeTo = std::min(timeFrom + _frameCount, sampleCount);
-
-					sound->getSamples(_frequency, _channelCount, buffer.data() + offset, timeFrom, timeTo);
-
-					auto itSamples = _samples.begin();
-					auto itBuffer = buffer.begin();
-					const auto itBufferEnd = buffer.cend();
-					for (; itBuffer != itBufferEnd; ++itSamples, ++itBuffer)
-					{
-						*itSamples = static_cast<int32_t>(std::clamp<int64_t>(static_cast<int64_t>(*itSamples) + static_cast<int64_t>(*itBuffer), INT32_MIN, INT32_MAX));
-					}
-
-					if (timeTo == sampleCount)
-					{
-						auto itErased = itTimeline;
-						--itTimeline;
-						delete sound;
-						_timeline.erase(itErased);
-					}
+					break;
 				}
 
-				_timelineIndex += _frameCount;
-				_samplesReady = true;
+				std::fill(buffer.begin(), buffer.end(), 0);
+					
+				const uint64_t offset = timeStart > range[0] ? timeStart - range[0] : 0;
+				const uint64_t timeFrom = range[0] > timeStart ? range[0] - timeStart : 0;
+				const uint64_t timeTo = std::min(timeFrom + _frameCount, sampleCount);
 
-				_samplesMutex.unlock();
-				_timelineMutex.unlock();
+				sound->getSamples(_frequency, _channelCount, buffer.data() + offset, timeFrom, timeTo);
+
+				auto itSamples = _samples.begin();
+				auto itBuffer = buffer.begin();
+				const auto itBufferEnd = buffer.cend();
+				for (; itBuffer != itBufferEnd; ++itSamples, ++itBuffer)
+				{
+					*itSamples = static_cast<int32_t>(std::clamp<int64_t>(static_cast<int64_t>(*itSamples) + static_cast<int64_t>(*itBuffer), INT32_MIN, INT32_MAX));
+				}
+
+				if (timeTo == sampleCount)
+				{
+					auto itErased = itTimeline;
+					--itTimeline;
+					delete sound;
+					_timeline.erase(itErased);
+				}
 			}
+
+			_timelineIndex += _frameCount;
+			_samplesReady = true;
+
+			_timelineMutex.unlock();
 		}
 	}
 }

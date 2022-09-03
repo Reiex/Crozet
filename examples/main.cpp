@@ -20,7 +20,7 @@ int main()
 	audioOutput.createSound<crz::SoundFile>("build/test.wav", crz::SoundFileFormat::Wave);
 	audioOutput.playSound(0);
 
-	while (true);
+	std::this_thread::sleep_for(std::chrono::seconds(1000));
 
 	return 0;
 }

@@ -45,6 +45,7 @@ namespace crz
 			std::multimap<uint64_t, SoundBase*> _timeline;
 
 			std::thread _samplesThread;
+			std::condition_variable _sampleCondition;
 			std::mutex _samplesMutex;
 			std::vector<int32_t> _samples;
 			bool _samplesReady;

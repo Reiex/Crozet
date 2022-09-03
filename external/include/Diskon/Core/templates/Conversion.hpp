@@ -32,7 +32,7 @@ namespace dsk
 
 		if constexpr (sizeof(TFrom) > sizeof(TTo))
 		{
-			constexpr uint8_t shift = sizeof(TFrom) - sizeof(TTo);
+			constexpr uint8_t shift = (sizeof(TFrom) - sizeof(TTo)) * 8;
 			rTo = rFrom >> shift;
 		}
 		else if constexpr (sizeof(TFrom) < sizeof(TTo))
@@ -63,7 +63,7 @@ namespace dsk
 
 		if constexpr (sizeof(TFrom) > sizeof(TTo))
 		{
-			constexpr uint8_t shift = sizeof(TFrom) - sizeof(TTo);
+			constexpr uint8_t shift = (sizeof(TFrom) - sizeof(TTo)) * 8;
 			constexpr TFrom offset = std::numeric_limits<TFrom>::max() / 2;
 			rTo = static_cast<TTo>((rFrom + offset) >> shift);
 		}
@@ -97,7 +97,7 @@ namespace dsk
 
 		if constexpr (sizeof(TFrom) > sizeof(TTo))
 		{
-			constexpr uint8_t shift = sizeof(TFrom) - sizeof(TTo);
+			constexpr uint8_t shift = (sizeof(TFrom) - sizeof(TTo)) * 8;
 			rTo = static_cast<TTo>(rFrom >> shift) + offset;
 		}
 		else if constexpr (sizeof(TFrom) < sizeof(TTo))
@@ -129,22 +129,14 @@ namespace dsk
 
 		if constexpr (sizeof(TFrom) > sizeof(TTo))
 		{
-			constexpr uint8_t shift = sizeof(TFrom) - sizeof(TTo);
+			constexpr uint8_t shift = (sizeof(TFrom) - sizeof(TTo)) * 8;
 			rTo = rFrom >> shift;
 		}
 		else if constexpr (sizeof(TFrom) < sizeof(TTo))
 		{
-			constexpr uint8_t shiftInit = ((sizeof(TTo) - sizeof(TFrom)) % sizeof(TFrom)) * 8;
-			constexpr uint8_t shift = sizeof(TFrom) * 8;
-			constexpr uint8_t iter = (sizeof(TTo) - sizeof(TFrom)) / sizeof(TFrom);
-
-			TTo rCastedFrom = static_cast<TTo>(rFrom);
-
-			rTo = rCastedFrom << shiftInit;
-			for (uint8_t i = 0; i < iter; ++i)
-			{
-				rTo = (rTo << shift) | rCastedFrom;
-			}
+			// TODO: Enhance that.
+			constexpr uint8_t shift = (sizeof(TTo) - sizeof(TFrom)) * 8;
+			rTo = rFrom << shift;
 		}
 		else
 		{
