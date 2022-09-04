@@ -79,23 +79,6 @@ namespace dsk
 			std::string errorMessage;
 		};
 
-		/*
-		
-		TODO:
-			- Add a member _bufferSize to know how much buffering can be done:
-				- For deflate block reading
-				- For the copy when writing large chunks of data (before byte swap)
-				- For zlib data reading
-				- For png crc check
-				- etc...
-
-			- Handle bit endianness ?
-
-			- SubStreams are stored in a std::unordered_map<std::type_index, FormatIStream*>
-				- Then: TSubStream* getSubStream<TSubStream>()
-
-		*/
-
 		class FormatIStream
 		{
 			public:

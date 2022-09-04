@@ -40,6 +40,12 @@ namespace crz
 			case SoundFileFormat::Wave:
 			{
 				dsk::fmt::WaveIStream* waveIStream = dynamic_cast<dsk::fmt::WaveIStream*>(_stream);
+
+				if (timeFrom != _currentSample)
+				{
+					waveIStream->skipBlocks(timeFrom - _currentSample);
+				}
+
 				waveIStream->readSampleBlocks(samples, timeTo - timeFrom);
 				break;
 			}

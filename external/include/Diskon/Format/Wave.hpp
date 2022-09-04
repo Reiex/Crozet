@@ -54,6 +54,8 @@ namespace dsk
 				template<typename TSample> const FormatError& readFile(wave::File<TSample>& file);
 				const FormatError& readHeader(wave::Header& header);
 				template<typename TSample> const FormatError& readSampleBlocks(TSample* samples, uint32_t blockCount);
+				const FormatError& skipBlocks(uint32_t blockCount);
+				const FormatError& readEndFile();
 
 				~WaveIStream() = default;
 
@@ -70,6 +72,7 @@ namespace dsk
 				template<typename TRaw, typename TSample> const FormatError& _readRawSampleBlocks(TSample* samples, uint32_t blockCount);
 
 				RiffIStream* _riffStream;
+				bool _headerRead;
 				wave::Header _header;
 				uint32_t _remainingBlocks;
 		};

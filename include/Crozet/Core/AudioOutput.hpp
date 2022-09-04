@@ -16,8 +16,12 @@ namespace crz
 			AudioOutput& operator=(AudioOutput&& stream) = delete;
 
 			template<std::derived_from<SoundBase> TSound, typename... Args> uint64_t createSound(Args&&... args);
-			// TSound getSound(uint64_t soundId);
-			void playSound(uint64_t soundId, double delay = 0.0);
+			void playSound(uint64_t soundId, double delay = 0.0, double startTime = 0.0, double duration = -1.0, bool removeWhenFinished = true);
+			void stopSound(uint64_t soundId);
+			void removeSound(uint64_t soundId);
+
+			const SoundBase* getSound(uint64_t soundId) const;
+			SoundBase* getSound(uint64_t soundId);
 
 			uint32_t getFrequency() const;
 			uint16_t getChannelCount() const;
@@ -30,7 +34,15 @@ namespace crz
 			int internalCallback(int32_t* output, unsigned long frameCount);
 			void samplesComputationLoop();
 
-			static constexpr uint64_t _frameCount = 512;
+			struct SoundPlayInfo
+			{
+				uint64_t soundId;
+				uint64_t timeFrom;
+				uint64_t timeTo;
+				bool removeWhenFinished;
+			};
+
+			static constexpr uint64_t _frameCount = 1024;
 
 			void* _stream;
 
@@ -42,14 +54,13 @@ namespace crz
 
 			std::mutex _timelineMutex;
 			uint64_t _timelineIndex;
-			std::multimap<uint64_t, SoundBase*> _timeline;
+			std::multimap<uint64_t, SoundPlayInfo> _timeline;
 
 			std::thread _samplesThread;
-			std::condition_variable _sampleCondition;
 			std::mutex _samplesMutex;
+			std::condition_variable _samplesCondition;
 			std::vector<int32_t> _samples;
 			bool _samplesReady;
-			bool _stopThread;
 
 		friend int audioOutputMidCallback(int32_t* output, unsigned long frameCount, AudioOutput* outputStream);
 	};

@@ -11,13 +11,15 @@ namespace dsk
 		{
 			FMT_BEGIN("WaveIStream::readFile(wave::File<TSample>& file)");
 
-			assert(_remainingBlocks == 0);
+			assert(!_headerRead);
 
 			FMT_CALL(readHeader, _header);
 			file.metadata = _header.metadata;
 			file.samples.resize(_header.blockCount * _header.metadata.channelCount);
 
 			FMT_CALL(readSampleBlocks, file.samples.data(), _header.blockCount);
+
+			FMT_CALL(readEndFile);
 
 			return *_error;
 		}
@@ -27,6 +29,7 @@ namespace dsk
 		{
 			FMT_BEGIN("WaveIStream::readSampleBlock(TSample* samples, uint32_t blockCount)");
 
+			assert(_headerRead);
 			assert(_remainingBlocks >= blockCount);
 
 			switch (_header.metadata.format)
@@ -88,15 +91,6 @@ namespace dsk
 			}
 
 			_remainingBlocks -= blockCount;
-			if (_remainingBlocks == 0)
-			{
-				riff::ChunkHeader chunkHeader;
-				while (_riffStream->computeRemainingSize())
-				{
-					FMT_SUB_CALL(_riffStream, readChunkHeader, chunkHeader);
-					FMT_SUB_CALL(_riffStream, skipChunkContent);
-				}
-			}
 
 			return *_error;
 		}
