@@ -16,8 +16,8 @@ namespace crz
 			AudioOutput& operator=(AudioOutput&& stream) = delete;
 
 			template<std::derived_from<SoundBase> TSound, typename... Args> uint64_t createSound(Args&&... args);
-			void playSound(uint64_t soundId, double delay = 0.0, double startTime = 0.0, double duration = -1.0, bool removeWhenFinished = true);
-			void stopSound(uint64_t soundId);
+			void scheduleSound(uint64_t soundId, double delay = 0.0, double startTime = 0.0, double duration = -1.0, bool removeWhenFinished = true);
+			void unscheduleSound(uint64_t soundId);
 			void removeSound(uint64_t soundId);
 
 			const SoundBase* getSound(uint64_t soundId) const;
@@ -31,12 +31,13 @@ namespace crz
 
 		private:
 
+			bool canScheduleSound(uint64_t soundId, double delay, double startTime, double duration, bool removeWhenFinished) const;
 			int internalCallback(int32_t* output, unsigned long frameCount);
 			void samplesComputationLoop();
 
-			struct SoundPlayInfo
+			struct ScheduleInfo
 			{
-				uint64_t soundId;
+				uint64_t scheduleTime;
 				uint64_t timeFrom;
 				uint64_t timeTo;
 				bool removeWhenFinished;
@@ -49,12 +50,12 @@ namespace crz
 			uint32_t _frequency;
 			uint16_t _channelCount;
 
-			uint64_t _nextSoundIndex;
+			uint64_t _nextSoundId;
 			std::unordered_map<uint64_t, SoundBase*> _sounds;
 
-			std::mutex _timelineMutex;
-			uint64_t _timelineIndex;
-			std::multimap<uint64_t, SoundPlayInfo> _timeline;
+			std::mutex _scheduleMutex;
+			uint64_t _currentTime;
+			std::unordered_map<uint64_t, std::deque<ScheduleInfo>> _schedule;
 
 			std::thread _samplesThread;
 			std::mutex _samplesMutex;

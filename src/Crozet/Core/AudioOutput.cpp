@@ -25,12 +25,12 @@ namespace crz
 		_frequency(0),
 		_channelCount(0),
 
-		_nextSoundIndex(0),
+		_nextSoundId(0),
 		_sounds(),
 
-		_timelineMutex(),
-		_timelineIndex(0),
-		_timeline(),
+		_scheduleMutex(),
+		_currentTime(0),
+		_schedule(),
 
 		_samplesThread(),
 		_samplesMutex(),
@@ -89,83 +89,67 @@ namespace crz
 		_samplesThread = std::thread(&AudioOutput::samplesComputationLoop, this);
 	}
 
-	void AudioOutput::playSound(uint64_t soundId, double delay, double startTime, double duration, bool removeWhenFinished)
+	void AudioOutput::scheduleSound(uint64_t soundId, double delay, double startTime, double duration, bool removeWhenFinished)
 	{
-		assert(_sounds.find(soundId) != _sounds.end());
-		assert(!_sounds.find(soundId)->second->isPlaying());
-		assert(startTime >= _sounds.find(soundId)->second->getCurrentTime());
+		_scheduleMutex.lock();
 
-		_timelineMutex.lock();
+		assert(canScheduleSound(soundId, delay, startTime, duration, removeWhenFinished));
 
-		// Compute where to insert sound in _timeline
+		// Compute schedule info
 
-		auto it = _sounds.find(soundId);
-		SoundBase* sound = it->second;
-		const uint64_t index = _timelineIndex + uint64_t(delay * _frequency);
+		const uint64_t sampleCount = _sounds.find(soundId)->second->getSampleCount(_frequency);
 
-		// Compute sound play info
-
-		const uint64_t sampleCount = sound->getSampleCount(_frequency);
-		SoundPlayInfo info;
-		info.soundId = soundId;
-		info.timeFrom = std::min<uint64_t>(startTime * _frequency, sampleCount);
-		if (duration < 0.0)
-		{
-			info.timeTo = sampleCount;
-		}
-		else
-		{
-			info.timeTo = std::min<uint64_t>((startTime + duration) * _frequency, sampleCount);
-		}
+		ScheduleInfo info;
+		info.scheduleTime = _currentTime + uint64_t(delay * _frequency);
+		info.timeFrom = startTime * _frequency;
+		info.timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
 		info.removeWhenFinished = removeWhenFinished;
 
-		// If timeline is empty, we need to restart the stream (stopped in samplesComputationLoop)
+		// Insert it in _schedule
 
-		if (_timeline.empty())
+		std::deque<ScheduleInfo>& infos = _schedule[soundId];
+		auto it = infos.begin();
+		const auto itEnd = infos.cend();
+		for (;; ++it)
+		{
+			if (it == itEnd || info.scheduleTime < it->scheduleTime)
+			{
+				infos.insert(it, info);
+				break;
+			}
+		}
+
+		// Start stream if it was stopped
+
+		if (_schedule.empty())
 		{
 			PaStream* paStream = reinterpret_cast<PaStream*>(_stream);
 			Pa_StartStream(paStream);
 		}
 
-		// Add sound to timeline
-
-		_timeline.emplace(index, info);
-
-		_timelineMutex.unlock();
+		_scheduleMutex.unlock();
 	}
 
-	void AudioOutput::stopSound(uint64_t soundId)
+	void AudioOutput::unscheduleSound(uint64_t soundId)
 	{
 		assert(_sounds.find(soundId) != _sounds.end());
 
-		_timelineMutex.lock();
+		_scheduleMutex.lock();
 
-		// Find sound in timeline
-
-		auto it = _timeline.begin();
-		const auto itEnd = _timeline.cend();
-		for (; it->second.soundId != soundId && it != itEnd; ++it);
-
-		// Remove it from timeline
-
-		if (it != itEnd)
+		auto it = _schedule.find(soundId);
+		if (it != _schedule.end())
 		{
-			_timeline.erase(it);
-			_sounds.find(soundId)->second->setIsPlaying(false);
+			_schedule.erase(it);
 		}
 
-		_timelineMutex.unlock();
+		_scheduleMutex.unlock();
 	}
 
 	void AudioOutput::removeSound(uint64_t soundId)
 	{
 		assert(_sounds.find(soundId) != _sounds.end());
 
-		// If sound is playing, stop it
-
-		stopSound(soundId);
-
-		// Delete and remove sound
+		unscheduleSound(soundId);
 
 		auto it = _sounds.find(soundId);
 		delete it->second;
@@ -230,6 +214,89 @@ namespace crz
 		}
 	}
 
+	bool AudioOutput::canScheduleSound(uint64_t soundId, double delay, double startTime, double duration, bool removeWhenFinished) const
+	{
+		// Check sound exists
+
+		auto itSounds = _sounds.find(soundId);
+		if (itSounds == _sounds.end())
+		{
+			return false;
+		}
+
+		// Check sound can be played starting at desired time
+
+		const SoundBase* sound = itSounds->second;
+		if (startTime < sound->getCurrentTime())
+		{
+			return false;
+		}
+
+		// Check the times are correct
+
+		const uint64_t sampleCount = sound->getSampleCount(_frequency);
+		const uint64_t timeFrom = startTime * _frequency;
+		const uint64_t timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
+
+		if (timeFrom > sampleCount || timeTo > sampleCount)
+		{
+			return false;
+		}
+
+		const uint64_t scheduleTime = _currentTime + uint64_t(delay * _frequency);
+
+		// If sound isn't already scheduled, shortcut the call
+
+		auto itSchedule = _schedule.find(soundId);
+		if (itSchedule == _schedule.end())
+		{
+			return true;
+		}
+
+		const std::deque<ScheduleInfo>& infos = itSchedule->second;
+
+		// Check the same sound isn't playing twice at the same time and that there is no "rewind"
+
+		auto itInfo = infos.begin();
+		const auto itInfoEnd = infos.cend();
+		for (; itInfo != itInfoEnd; ++itInfo)
+		{
+			if (scheduleTime < itInfo->scheduleTime)
+			{
+				if (removeWhenFinished)
+				{
+					return false;
+				}
+
+				if (scheduleTime + timeTo - timeFrom > itInfo->scheduleTime || timeTo > itInfo->timeFrom)
+				{
+					return false;
+				}
+
+				break;
+			}
+			else
+			{
+				if (itInfo->removeWhenFinished)
+				{
+					return false;
+				}
+			}
+		}
+
+		if (itInfo != infos.begin())
+		{
+			--itInfo;
+			if (itInfo->scheduleTime + itInfo->timeTo - itInfo->timeFrom > scheduleTime || itInfo->timeTo > timeFrom)
+			{
+				return false;
+			}
+			++itInfo;
+		}
+
+		return true;
+	}
+
 	int AudioOutput::internalCallback(int32_t* output, unsigned long frameCount)
 	{
 		assert(frameCount * _channelCount == _samples.size());
@@ -274,34 +341,34 @@ namespace crz
 
 			// Prepare samples range to be computed
 
-			_timelineMutex.lock();
+			_scheduleMutex.lock();
 
-			const uint64_t range[2] = { _timelineIndex, _timelineIndex + _frameCount };
+			const uint64_t range[2] = { _currentTime, _currentTime + _frameCount };
 
 			std::fill(_samples.begin(), _samples.end(), 0);
 			std::vector<int32_t> buffer(_samples.size());
 
-			// For each sound currently playing in the timeline
+			// For each sound currently playing in the schedule
 
-			auto itTimeline = _timeline.begin();
-			const auto itTimelineEnd = _timeline.cend();
-			for (; itTimeline != itTimelineEnd;)
+			auto itSchedule = _schedule.begin();
+			const auto itScheduleEnd = _schedule.cend();
+			for (; itSchedule != itScheduleEnd;)
 			{
-				const uint64_t& index = itTimeline->first;
+				ScheduleInfo& info = itSchedule->second.front();
 
-				if (index >= range[1])
+				if (info.scheduleTime > range[1])
 				{
-					break;
+					++itSchedule;
+					continue;
 				}
 
 				// Compute samples to retrieve and retrieve them
 
-				const SoundPlayInfo& info = itTimeline->second;
-				SoundBase* sound = _sounds.find(info.soundId)->second;
+				SoundBase* sound = _sounds.find(itSchedule->first)->second;
 				const uint64_t sampleCount = sound->getSampleCount(_frequency);
-					
-				const uint64_t timeFrom = info.timeFrom + (range[0] > index ? range[0] - index : 0);
-				const uint64_t offset = index > range[0] ? index - range[0] : 0;
+
+				const uint64_t timeFrom = info.timeFrom + (range[0] > info.scheduleTime ? range[0] - info.scheduleTime : 0);
+				const uint64_t offset = info.scheduleTime > range[0] ? info.scheduleTime - range[0] : 0;
 				const uint64_t timeTo = std::min(timeFrom + _frameCount - offset, info.timeTo);
 
 				if (timeTo - timeFrom != _frameCount)
@@ -314,48 +381,49 @@ namespace crz
 
 				std::transform(_samples.begin(), _samples.end(), buffer.begin(), _samples.begin(), samplesStackFunc);
 
-				// Remove the sound if the end was reached or set isPlaying if necessary
+				// Remove the sound if the end was reached
 
 				if (timeTo == info.timeTo)
 				{
 					if (info.removeWhenFinished)
 					{
 						delete sound;
-						_sounds.erase(info.soundId);
+						_sounds.erase(itSchedule->first);
+					}
+
+					itSchedule->second.pop_front();
+
+					if (itSchedule->second.empty())
+					{
+						auto itErased = itSchedule;
+						++itSchedule;
+
+						_schedule.erase(itErased);
 					}
 					else
 					{
-						sound->setIsPlaying(false);
+						++itSchedule;
 					}
-
-					auto itErased = itTimeline;
-					++itTimeline;
-					_timeline.erase(itErased);
 				}
 				else
 				{
-					if (!sound->isPlaying())
-					{
-						sound->setIsPlaying(true);
-					}
-
-					++itTimeline;
+					++itSchedule;
 				}
 			}
 
 			// Mark the samples as ready
 
-			_timelineIndex += _frameCount;
+			_currentTime += _frameCount;
 			_samplesReady = true;
 
 			// Stop the stream if timeline is empty
 
-			if (_timeline.empty())
+			if (_schedule.empty())
 			{
 				Pa_StopStream(paStream);
 			}
 
-			_timelineMutex.unlock();
+			_scheduleMutex.unlock();
 		}
 	}
 }

@@ -7,8 +7,7 @@ namespace crz
 		_frequency(0),
 		_channelCount(0),
 		_sampleCount(0),
-		_currentSample(0),
-		_isPlaying(false)
+		_currentSample(0)
 	{
 	}
 
@@ -35,16 +34,6 @@ namespace crz
 	double SoundBase::getCurrentTime() const
 	{
 		return static_cast<double>(_currentSample) / _frequency;
-	}
-
-	bool SoundBase::isPlaying() const
-	{
-		return _isPlaying;
-	}
-
-	void SoundBase::setIsPlaying(bool isPlaying)
-	{
-		_isPlaying = isPlaying;
 	}
 
 	uint64_t SoundBase::getSampleCount(uint32_t frequency) const
