@@ -10,6 +10,7 @@
 
 namespace crz
 {
+	struct AudioDevice;
 	class AudioOutput;
 	class SoundBase;
 	class SoundFile;

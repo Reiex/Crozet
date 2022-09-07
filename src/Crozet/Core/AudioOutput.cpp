@@ -19,6 +19,10 @@ namespace crz
 	}
 
 
+	AudioOutput::AudioOutput() : AudioOutput(AudioDevice::getDefaultOutputDeviceIndex())
+	{
+	}
+
 	AudioOutput::AudioOutput(int deviceIndex) :
 		_stream(nullptr),
 

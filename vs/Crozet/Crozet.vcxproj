@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Crozet\Core\AudioDevice.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\Core.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\AudioOutput.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundBase.hpp" />
@@ -29,6 +30,7 @@
     <ClInclude Include="..\..\include\Crozet\Private\Private.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Crozet\Core\AudioDevice.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\AudioOutput.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundBase.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundFile.cpp" />

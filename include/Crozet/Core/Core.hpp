@@ -2,6 +2,8 @@
 
 #include <Crozet/Core/types.hpp>
 
+#include <Crozet/Core/AudioDevice.hpp>
+
 #include <Crozet/Core/AudioOutput.hpp>
 
 #include <Crozet/Core/SoundBase.hpp>

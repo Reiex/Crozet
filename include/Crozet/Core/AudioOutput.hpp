@@ -8,6 +8,7 @@ namespace crz
 	{
 		public:
 
+			AudioOutput();
 			AudioOutput(int deviceIndex);
 			AudioOutput(const AudioOutput& stream) = delete;
 			AudioOutput(AudioOutput&& stream) = delete;
