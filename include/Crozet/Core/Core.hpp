@@ -6,6 +6,7 @@
 #include <Crozet/Core/AudioDevice.hpp>
 
 #include <Crozet/Core/AudioOutput.hpp>
+#include <Crozet/Core/AudioInput.hpp>
 
 
 #include <Crozet/Core/SoundSource.hpp>

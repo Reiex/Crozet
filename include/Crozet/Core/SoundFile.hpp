@@ -14,6 +14,7 @@ namespace crz
 	{
 		public:
 
+			SoundFile(const std::filesystem::path& path, SoundFileFormat format);
 			SoundFile(const SoundFile& sound) = delete;
 			SoundFile(SoundFile&& sound) = delete;
 
@@ -24,13 +25,9 @@ namespace crz
 
 		private:
 
-			SoundFile(const std::filesystem::path& path, SoundFileFormat format);
-
 			void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) override final;
 
 			SoundFileFormat _format;
 			dsk::fmt::FormatIStream* _stream;
-
-		friend class AudioOutput;
 	};
 }

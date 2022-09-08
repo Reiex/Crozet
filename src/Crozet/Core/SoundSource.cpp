@@ -10,7 +10,26 @@ namespace crz
 
 	void SoundSource::getSamples(uint32_t frequency, uint16_t channelCount, int32_t* samples, uint64_t timeFrom, uint64_t timeTo)
 	{
-		// If no samples required, shortcut the call
+		// Clip timeFrom and timeTo
+
+		if (timeFrom > timeTo)
+		{
+			std::swap(timeFrom, timeTo);
+		}
+
+		const uint64_t sampleCount = getSampleCount();
+		if (timeFrom >= sampleCount)
+		{
+			std::fill_n(samples, timeTo - timeFrom, 0);
+			return;
+		}
+		else if (timeTo > sampleCount)
+		{
+			std::fill_n(samples + sampleCount - timeFrom, timeTo - sampleCount, 0);
+			timeTo = sampleCount;
+		}
+
+		// If no sample required, shortcut the call
 
 		if (timeFrom == timeTo)
 		{

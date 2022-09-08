@@ -19,6 +19,8 @@ namespace crz
 			virtual uint64_t getSampleCount() const override = 0;
 			virtual uint64_t getCurrentSample() const override = 0;
 
+			void setSource(SoundSource* source);
+
 			virtual ~FilterBase() = default;
 
 		protected:
@@ -28,11 +30,5 @@ namespace crz
 			virtual void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) override = 0;
 
 			SoundSource* _source;
-
-		private:
-
-			void setSource(SoundSource* source);
-
-		friend class SoundBase;
 	};
 }

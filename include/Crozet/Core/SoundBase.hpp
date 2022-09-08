@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Crozet/Core/types.hpp>
+#include <Crozet/Core/SoundSource.hpp>
 
 namespace crz
 {
@@ -18,6 +19,9 @@ namespace crz
 
 			const FilterBase* getFilter(uint64_t filterId) const;
 			FilterBase* getFilter(uint64_t filterId);
+
+			const SoundSource* getFilteredSource() const;
+			SoundSource* getFilteredSource();
 
 			virtual uint32_t getFrequency() const override final;
 			virtual uint16_t getChannelCount() const override final;
@@ -38,13 +42,6 @@ namespace crz
 			uint64_t _currentSample;
 
 			std::vector<FilterBase*> _filters;
-
-		private:
-
-			const SoundSource* getFilteredSource() const;
-			SoundSource* getFilteredSource();
-
-		friend class AudioOutput;
 	};
 }
 

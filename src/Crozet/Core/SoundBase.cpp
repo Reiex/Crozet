@@ -35,26 +35,6 @@ namespace crz
 		}
 	}
 
-	uint32_t SoundBase::getFrequency() const
-	{
-		return _frequency;
-	}
-
-	uint16_t SoundBase::getChannelCount() const
-	{
-		return _channelCount;
-	}
-
-	uint64_t SoundBase::getSampleCount() const
-	{
-		return _sampleCount;
-	}
-
-	uint64_t SoundBase::getCurrentSample() const
-	{
-		return _currentSample;
-	}
-
 	const SoundSource* SoundBase::getFilteredSource() const
 	{
 		if (_filters.empty())
@@ -77,6 +57,26 @@ namespace crz
 		{
 			return _filters.back();
 		}
+	}
+
+	uint32_t SoundBase::getFrequency() const
+	{
+		return _frequency;
+	}
+
+	uint16_t SoundBase::getChannelCount() const
+	{
+		return _channelCount;
+	}
+
+	uint64_t SoundBase::getSampleCount() const
+	{
+		return _sampleCount;
+	}
+
+	uint64_t SoundBase::getCurrentSample() const
+	{
+		return _currentSample;
 	}
 
 	SoundBase::~SoundBase()

@@ -13,6 +13,7 @@ namespace crz
 	struct AudioDevice;
 
 	class AudioOutput;
+	class AudioInput;
 
 
 	class SoundSource;

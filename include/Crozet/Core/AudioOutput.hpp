@@ -10,11 +10,11 @@ namespace crz
 
 			AudioOutput();
 			AudioOutput(int deviceIndex);
-			AudioOutput(const AudioOutput& stream) = delete;
-			AudioOutput(AudioOutput&& stream) = delete;
+			AudioOutput(const AudioOutput& output) = delete;
+			AudioOutput(AudioOutput&& output) = delete;
 
-			AudioOutput& operator=(const AudioOutput& stream) = delete;
-			AudioOutput& operator=(AudioOutput&& stream) = delete;
+			AudioOutput& operator=(const AudioOutput& output) = delete;
+			AudioOutput& operator=(AudioOutput&& output) = delete;
 
 			template<std::derived_from<SoundBase> TSound, typename... Args> uint64_t createSound(Args&&... args);
 			void scheduleSound(uint64_t soundId, double delay = 0.0, double startTime = 0.0, double duration = -1.0, bool removeWhenFinished = true);
@@ -64,7 +64,7 @@ namespace crz
 			std::vector<int32_t> _samples;
 			bool _samplesReady;
 
-		friend int audioOutputMidCallback(int32_t* output, unsigned long frameCount, AudioOutput* outputStream);
+		friend int audioOutputMidCallback(int32_t* output, unsigned long frameCount, AudioOutput* audioOutput);
 	};
 }
 

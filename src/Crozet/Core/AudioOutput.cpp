@@ -55,6 +55,7 @@ namespace crz
 		const PaDeviceInfo* deviceInfo = Pa_GetDeviceInfo(deviceIndex);
 		_frequency = deviceInfo->defaultSampleRate;
 		_channelCount = deviceInfo->maxOutputChannels;
+		assert(_channelCount > 0);
 
 		_samples.resize(_channelCount * _frameCount, 0);
 
@@ -71,7 +72,6 @@ namespace crz
 		error = Pa_OpenStream(&paStream, nullptr, &parameters, _frequency, _frameCount, paNoFlag, audioOutputCallback, this);
 		if (error)
 		{
-			std::cout << Pa_GetErrorText(error) << std::endl;
 			Pa_Terminate();
 			return;
 		}
@@ -108,7 +108,7 @@ namespace crz
 		ScheduleInfo info;
 		info.scheduleTime = _currentTime + uint64_t(delay * _frequency);
 		info.timeFrom = startTime * _frequency;
-		info.timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
+		info.timeTo = duration < 0.0 ? UINT64_MAX : (startTime + duration) * _frequency;
 		info.removeWhenFinished = removeWhenFinished;
 
 		// Start stream if it was stopped
@@ -248,17 +248,11 @@ namespace crz
 			return false;
 		}
 
-		// Check the times are correct
+		// Compute times
 
 		const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
 		const uint64_t timeFrom = startTime * _frequency;
-		const uint64_t timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
-
-		if (timeFrom > sampleCount || timeTo > sampleCount)
-		{
-			return false;
-		}
-
+		const uint64_t timeTo = duration < 0.0 ? UINT64_MAX : (startTime + duration) * _frequency;
 		const uint64_t scheduleTime = _currentTime + uint64_t(delay * _frequency);
 
 		// If sound isn't already scheduled, shortcut the call
@@ -331,7 +325,7 @@ namespace crz
 
 		_samplesCondition.notify_one();
 
-		return 0;
+		return paContinue;
 	}
 
 	namespace
@@ -399,7 +393,7 @@ namespace crz
 
 				// Remove the sound if the end was reached
 
-				if (timeTo == info.timeTo)
+				if (timeTo == info.timeTo || timeTo >= sampleCount)
 				{
 					if (info.removeWhenFinished)
 					{

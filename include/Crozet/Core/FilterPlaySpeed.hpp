@@ -8,6 +8,7 @@ namespace crz
 	{
 		public:
 
+			FilterPlaySpeed(double speedRatio);
 			FilterPlaySpeed(const FilterPlaySpeed& filter) = delete;
 			FilterPlaySpeed(FilterPlaySpeed&& filter) = delete;
 
@@ -23,12 +24,8 @@ namespace crz
 
 		private:
 
-			FilterPlaySpeed(double speedRatio);
-
 			virtual void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) override final;
 
 			double _speedRatio;
-
-		friend class SoundBase;
 	};
 }
