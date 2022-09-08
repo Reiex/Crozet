@@ -4,7 +4,7 @@
 
 namespace crz
 {
-	class SoundBase
+	class SoundBase : public SoundSource
 	{
 		public:
 
@@ -14,31 +14,38 @@ namespace crz
 			SoundBase& operator=(const SoundBase& sound) = delete;
 			SoundBase& operator=(SoundBase&& sound) = delete;
 
-			uint32_t getFrequency() const;
-			uint16_t getChannelCount() const;
-			uint64_t getSampleCount() const;
+			template<std::derived_from<FilterBase> TFilter, typename... Args> uint64_t addFilter(Args&&... args);
 
-			uint64_t getCurrentSample() const;
-			double getCurrentTime() const;
+			const FilterBase* getFilter(uint64_t filterId) const;
+			FilterBase* getFilter(uint64_t filterId);
 
-			virtual ~SoundBase() = default;
+			virtual uint32_t getFrequency() const override final;
+			virtual uint16_t getChannelCount() const override final;
+			virtual uint64_t getSampleCount() const override final;
+			virtual uint64_t getCurrentSample() const override final;
+
+			virtual ~SoundBase();
 
 		protected:
 
 			SoundBase();
 
-			virtual void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) = 0;
+			virtual void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) override = 0;
 
 			uint32_t _frequency;
 			uint16_t _channelCount;
 			uint64_t _sampleCount;
 			uint64_t _currentSample;
 
+			std::vector<FilterBase*> _filters;
+
 		private:
 
-			uint64_t getSampleCount(uint32_t frequency) const;
-			void getSamples(uint32_t frequency, uint16_t channelCount, int32_t* samples, uint64_t timeFrom, uint64_t timeTo);
-	
+			const SoundSource* getFilteredSource() const;
+			SoundSource* getFilteredSource();
+
 		friend class AudioOutput;
 	};
 }
+
+#include <Crozet/Core/templates/SoundBase.hpp>

@@ -31,6 +31,6 @@ namespace crz
 			SoundFileFormat _format;
 			dsk::fmt::FormatIStream* _stream;
 
-		friend AudioOutput;
+		friend class AudioOutput;
 	};
 }

@@ -73,7 +73,6 @@ namespace crz
 		{
 			std::cout << Pa_GetErrorText(error) << std::endl;
 			Pa_Terminate();
-			_stream = nullptr;
 			return;
 		}
 
@@ -84,24 +83,27 @@ namespace crz
 		{
 			Pa_CloseStream(paStream);
 			Pa_Terminate();
-			_stream = nullptr;
 			return;
 		}
 
 		// Start samples thread
 
+		_stream = reinterpret_cast<void*>(paStream);
 		_samplesThread = std::thread(&AudioOutput::samplesComputationLoop, this);
 	}
 
 	void AudioOutput::scheduleSound(uint64_t soundId, double delay, double startTime, double duration, bool removeWhenFinished)
 	{
+		assert(isValid());
+
 		_scheduleMutex.lock();
 
 		assert(canScheduleSound(soundId, delay, startTime, duration, removeWhenFinished));
 
 		// Compute schedule info
 
-		const uint64_t sampleCount = _sounds.find(soundId)->second->getSampleCount(_frequency);
+		const SoundSource* source = _sounds.find(soundId)->second->getFilteredSource();
+		const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
 
 		ScheduleInfo info;
 		info.scheduleTime = _currentTime + uint64_t(delay * _frequency);
@@ -109,7 +111,15 @@ namespace crz
 		info.timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
 		info.removeWhenFinished = removeWhenFinished;
 
-		// Insert it in _schedule
+		// Start stream if it was stopped
+
+		if (_schedule.empty())
+		{
+			PaStream* paStream = reinterpret_cast<PaStream*>(_stream);
+			Pa_StartStream(paStream);
+		}
+
+		// Insert info into _schedule
 
 		std::deque<ScheduleInfo>& infos = _schedule[soundId];
 		auto it = infos.begin();
@@ -123,19 +133,12 @@ namespace crz
 			}
 		}
 
-		// Start stream if it was stopped
-
-		if (_schedule.empty())
-		{
-			PaStream* paStream = reinterpret_cast<PaStream*>(_stream);
-			Pa_StartStream(paStream);
-		}
-
 		_scheduleMutex.unlock();
 	}
 
 	void AudioOutput::unscheduleSound(uint64_t soundId)
 	{
+		assert(isValid());
 		assert(_sounds.find(soundId) != _sounds.end());
 
 		_scheduleMutex.lock();
@@ -151,6 +154,7 @@ namespace crz
 
 	void AudioOutput::removeSound(uint64_t soundId)
 	{
+		assert(isValid());
 		assert(_sounds.find(soundId) != _sounds.end());
 
 		unscheduleSound(soundId);
@@ -162,6 +166,8 @@ namespace crz
 
 	const SoundBase* AudioOutput::getSound(uint64_t soundId) const
 	{
+		assert(isValid());
+
 		auto it = _sounds.find(soundId);
 		if (it == _sounds.end())
 		{
@@ -175,6 +181,8 @@ namespace crz
 
 	SoundBase* AudioOutput::getSound(uint64_t soundId)
 	{
+		assert(isValid());
+
 		auto it = _sounds.find(soundId);
 		if (it == _sounds.end())
 		{
@@ -188,11 +196,15 @@ namespace crz
 
 	uint32_t AudioOutput::getFrequency() const
 	{
+		assert(isValid());
+
 		return _frequency;
 	}
 
 	uint16_t AudioOutput::getChannelCount() const
 	{
+		assert(isValid());
+
 		return _channelCount;
 	}
 
@@ -203,7 +215,7 @@ namespace crz
 
 	AudioOutput::~AudioOutput()
 	{
-		if (_stream)
+		if (isValid())
 		{
 			PaStream* paStream = reinterpret_cast<PaStream*>(_stream);
 
@@ -230,15 +242,15 @@ namespace crz
 
 		// Check sound can be played starting at desired time
 
-		const SoundBase* sound = itSounds->second;
-		if (startTime < sound->getCurrentTime())
+		const SoundSource* source = itSounds->second->getFilteredSource();
+		if (startTime < source->getCurrentTime())
 		{
 			return false;
 		}
 
 		// Check the times are correct
 
-		const uint64_t sampleCount = sound->getSampleCount(_frequency);
+		const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
 		const uint64_t timeFrom = startTime * _frequency;
 		const uint64_t timeTo = duration < 0.0 ? sampleCount : (startTime + duration) * _frequency;
 
@@ -368,8 +380,8 @@ namespace crz
 
 				// Compute samples to retrieve and retrieve them
 
-				SoundBase* sound = _sounds.find(itSchedule->first)->second;
-				const uint64_t sampleCount = sound->getSampleCount(_frequency);
+				SoundSource* source = _sounds.find(itSchedule->first)->second->getFilteredSource();
+				const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
 
 				const uint64_t timeFrom = info.timeFrom + (range[0] > info.scheduleTime ? range[0] - info.scheduleTime : 0);
 				const uint64_t offset = info.scheduleTime > range[0] ? info.scheduleTime - range[0] : 0;
@@ -379,7 +391,7 @@ namespace crz
 				{
 					std::fill(buffer.begin(), buffer.end(), 0);
 				}
-				sound->getSamples(_frequency, _channelCount, buffer.data() + offset, timeFrom, timeTo);
+				source->getSamples(_frequency, _channelCount, buffer.data() + offset, timeFrom, timeTo);
 
 				// Stack them to the output samples
 
@@ -391,7 +403,7 @@ namespace crz
 				{
 					if (info.removeWhenFinished)
 					{
-						delete sound;
+						delete _sounds.find(itSchedule->first)->second;
 						_sounds.erase(itSchedule->first);
 					}
 

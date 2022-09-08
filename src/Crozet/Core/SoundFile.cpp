@@ -2,7 +2,7 @@
 
 namespace crz
 {
-	SoundFile::SoundFile(const std::filesystem::path& path, SoundFileFormat format) :
+	SoundFile::SoundFile(const std::filesystem::path& path, SoundFileFormat format) : SoundBase(),
 		_format(format),
 		_stream(nullptr)
 	{
@@ -50,6 +50,8 @@ namespace crz
 				break;
 			}
 		}
+
+		_currentSample = timeTo;
 	}
 
 	SoundFile::~SoundFile()

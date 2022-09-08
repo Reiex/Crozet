@@ -22,9 +22,13 @@
     <ClInclude Include="..\..\include\Crozet\Core\AudioDevice.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\Core.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\AudioOutput.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\FilterBase.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\FilterPlaySpeed.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundBase.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundFile.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\SoundSource.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\templates\AudioOutput.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\templates\SoundBase.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\types.hpp" />
     <ClInclude Include="..\..\include\Crozet\Crozet.hpp" />
     <ClInclude Include="..\..\include\Crozet\Private\Private.hpp" />
@@ -32,8 +36,11 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\Crozet\Core\AudioDevice.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\AudioOutput.cpp" />
+    <ClCompile Include="..\..\src\Crozet\Core\FilterBase.cpp" />
+    <ClCompile Include="..\..\src\Crozet\Core\FilterPlaySpeed.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundBase.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundFile.cpp" />
+    <ClCompile Include="..\..\src\Crozet\Core\SoundSource.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
