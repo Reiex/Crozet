@@ -17,6 +17,9 @@ namespace crz
 			AudioInput& operator=(const AudioInput& input) = delete;
 			AudioInput& operator=(AudioInput&& input) = delete;
 
+			void setStoredLength(double storedLength);
+			double getStoredLength() const;
+
 			bool isValid() const;
 
 			~AudioInput();
@@ -29,6 +32,8 @@ namespace crz
 			static constexpr uint64_t _frameCount = 1024;
 
 			void* _stream;
+
+			uint64_t _storedSamples;
 
 			std::mutex _samplesMutex;
 			std::deque<int32_t> _samples;

@@ -23,6 +23,7 @@ namespace crz
 
 	AudioInput::AudioInput(int deviceIndex) : SoundBase(),
 		_stream(nullptr),
+		_storedSamples(0),
 		_samplesMutex(),
 		_samples()
 	{
@@ -41,6 +42,7 @@ namespace crz
 		_channelCount = deviceInfo->maxInputChannels;
 		_sampleCount = 0;
 		_currentSample = 0;
+		_storedSamples = _frequency * _channelCount;
 		assert(_channelCount > 0);
 
 		// Open stream from device infos
@@ -75,6 +77,16 @@ namespace crz
 		_stream = reinterpret_cast<void*>(paStream);
 	}
 
+	void AudioInput::setStoredLength(double storedLength)
+	{
+		_storedSamples = storedLength * _frequency * _channelCount;
+	}
+
+	double AudioInput::getStoredLength() const
+	{
+		return static_cast<double>(_storedSamples) / (_frequency * _channelCount);
+	}
+
 	bool AudioInput::isValid() const
 	{
 		return _stream;
@@ -86,6 +98,13 @@ namespace crz
 
 		_samples.insert(_samples.end(), input, input + frameCount * _channelCount);
 		_sampleCount += frameCount;
+
+		const int64_t throwedSamples = _samples.size() - _storedSamples;
+		if (throwedSamples > 0)
+		{
+			_samples.erase(_samples.begin(), _samples.begin() + throwedSamples * _channelCount);
+			_currentSample += throwedSamples;
+		}
 
 		_samplesMutex.unlock();
 
@@ -101,6 +120,7 @@ namespace crz
 		if (timeFrom > _currentSample)
 		{
 			_samples.erase(_samples.begin(), _samples.begin() + (timeFrom - _currentSample) * _channelCount);
+			_samples.shrink_to_fit();
 		}
 
 		auto it = _samples.begin();

@@ -7,6 +7,8 @@ namespace crz
 	template<std::derived_from<FilterBase> TFilter, typename... Args>
 	uint64_t SoundBase::addFilter(Args&&... args)
 	{
+		assert(_currentSample == 0);
+
 		const uint64_t index = _filters.size();
 
 		FilterBase* filter = new TFilter(std::forward<Args>(args)...);

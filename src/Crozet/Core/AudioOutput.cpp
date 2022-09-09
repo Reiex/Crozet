@@ -102,9 +102,6 @@ namespace crz
 
 		// Compute schedule info
 
-		const SoundSource* source = _sounds.find(soundId)->second->getFilteredSource();
-		const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
-
 		ScheduleInfo info;
 		info.scheduleTime = _currentTime + uint64_t(delay * _frequency);
 		info.timeFrom = startTime * _frequency;
@@ -248,13 +245,6 @@ namespace crz
 			return false;
 		}
 
-		// Compute times
-
-		const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
-		const uint64_t timeFrom = startTime * _frequency;
-		const uint64_t timeTo = duration < 0.0 ? UINT64_MAX : (startTime + duration) * _frequency;
-		const uint64_t scheduleTime = _currentTime + uint64_t(delay * _frequency);
-
 		// If sound isn't already scheduled, shortcut the call
 
 		auto itSchedule = _schedule.find(soundId);
@@ -266,6 +256,10 @@ namespace crz
 		const std::deque<ScheduleInfo>& infos = itSchedule->second;
 
 		// Check the same sound isn't playing twice at the same time and that there is no "rewind"
+
+		const uint64_t timeFrom = startTime * _frequency;
+		const uint64_t timeTo = duration < 0.0 ? UINT64_MAX : (startTime + duration) * _frequency;
+		const uint64_t scheduleTime = _currentTime + uint64_t(delay * _frequency);
 
 		auto itInfo = infos.begin();
 		const auto itInfoEnd = infos.cend();
@@ -353,8 +347,6 @@ namespace crz
 
 			_scheduleMutex.lock();
 
-			const uint64_t range[2] = { _currentTime, _currentTime + _frameCount };
-
 			std::fill(_samples.begin(), _samples.end(), 0);
 			std::vector<int32_t> buffer(_samples.size());
 
@@ -366,7 +358,7 @@ namespace crz
 			{
 				ScheduleInfo& info = itSchedule->second.front();
 
-				if (info.scheduleTime > range[1])
+				if (info.scheduleTime > _currentTime + _frameCount)
 				{
 					++itSchedule;
 					continue;
@@ -376,15 +368,11 @@ namespace crz
 
 				SoundSource* source = _sounds.find(itSchedule->first)->second->getFilteredSource();
 				const uint64_t sampleCount = source->getSampleCount() * _frequency / source->getFrequency();
-
-				const uint64_t timeFrom = info.timeFrom + (range[0] > info.scheduleTime ? range[0] - info.scheduleTime : 0);
-				const uint64_t offset = info.scheduleTime > range[0] ? info.scheduleTime - range[0] : 0;
+				const uint64_t timeFrom = info.timeFrom + (_currentTime > info.scheduleTime ? _currentTime - info.scheduleTime : 0);
+				const uint64_t offset = info.scheduleTime > _currentTime ? info.scheduleTime - _currentTime : 0;
 				const uint64_t timeTo = std::min(timeFrom + _frameCount - offset, info.timeTo);
 
-				if (timeTo - timeFrom != _frameCount)
-				{
-					std::fill(buffer.begin(), buffer.end(), 0);
-				}
+				std::fill_n(buffer.begin(), offset, 0);
 				source->getSamples(_frequency, _channelCount, buffer.data() + offset, timeFrom, timeTo);
 
 				// Stack them to the output samples

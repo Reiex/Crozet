@@ -12,8 +12,6 @@ int main()
 			- Retrieving callback CPU load
 			- Retrieve other datas such as frame dropped... status of different streams...
 
-		- AudioInput
-
 		- Make sure filters cannot be created once sounds started to play (not just scheduled ? use _currentTime ?)
 	*/
 
