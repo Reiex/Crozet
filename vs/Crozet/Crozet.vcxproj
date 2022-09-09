@@ -26,6 +26,7 @@
     <ClInclude Include="..\..\include\Crozet\Core\FilterBase.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\FilterPlaySpeed.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundBase.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\SoundBuffer.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundFile.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundSource.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\templates\AudioOutput.hpp" />
@@ -41,6 +42,7 @@
     <ClCompile Include="..\..\src\Crozet\Core\FilterBase.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\FilterPlaySpeed.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundBase.cpp" />
+    <ClCompile Include="..\..\src\Crozet\Core\SoundBuffer.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundFile.cpp" />
     <ClCompile Include="..\..\src\Crozet\Core\SoundSource.cpp" />
   </ItemGroup>

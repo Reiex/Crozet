@@ -13,6 +13,7 @@
 
 #include <Crozet/Core/SoundBase.hpp>
 #include <Crozet/Core/SoundFile.hpp>
+#include <Crozet/Core/SoundBuffer.hpp>
 
 #include <Crozet/Core/FilterBase.hpp>
 #include <Crozet/Core/FilterPlaySpeed.hpp>

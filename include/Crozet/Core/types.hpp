@@ -20,7 +20,7 @@ namespace crz
 
 	class SoundBase;
 	class SoundFile;
-	// TODO: class SoundBuffer;
+	class SoundBuffer;
 
 	class FilterBase;
 	class FilterPlaySpeed;
