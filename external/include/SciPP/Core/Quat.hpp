@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,8 +5,10 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
-#include <SciPP/Core/Tensor/StaticTensor.hpp>
+#include <SciPP/Core/Tensor/TensorBase.hpp>
 
 namespace scp
 {
@@ -38,12 +38,12 @@ namespace scp
 			constexpr bool operator!=(const Quat<TValue>& q) const;
 
 			constexpr void setFromRotationAxisAngle(const std::initializer_list<TValue>& axis, const TValue& angle);
-			constexpr void setFromRotationAxisAngle(const TensorBase<TValue>& axis, const TValue& angle);
-			constexpr void getRotationAxisAngle(TensorBase<TValue>& axis, TValue& angle);
+			template<TensorConcept<TValue> TTensor> constexpr void setFromRotationAxisAngle(const TTensor& axis, const TValue& angle);
+			template<TensorConcept<TValue> TTensor> constexpr void getRotationAxisAngle(TTensor& axis, TValue& angle);
 
 			constexpr void setFromRotationMatrix(const std::initializer_list<TValue>& matrix);
-			constexpr void setFromRotationMatrix(const TensorBase<TValue>& matrix);
-			constexpr void getRotationMatrix(TensorBase<TValue>& matrix) const;
+			template<TensorConcept<TValue> TTensor> constexpr void setFromRotationMatrix(const TTensor& matrix);
+			template<TensorConcept<TValue> TTensor> constexpr void getRotationMatrix(TTensor& matrix) const;
 
 			constexpr Quat<TValue>& inverse();
 			constexpr Quat<TValue>& conjugate();

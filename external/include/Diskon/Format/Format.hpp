@@ -13,3 +13,7 @@
 #include <Diskon/Format/Wave.hpp>
 
 #include <Diskon/Format/Xml.hpp>
+
+#include <Diskon/Format/Pnm.hpp>
+
+#include <Diskon/Format/Obj.hpp>

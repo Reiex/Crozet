@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,795 +5,1382 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/Tensor/Tensor.hpp>
 
 namespace scp
 {
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor() :
-		_values(nullptr),
-		_tree(nullptr),
-		_shape(nullptr),
-		_treeOffset(1),
+	SCP_TENSOR_DEF(template<typename TValue>, Tensor, Tensor<TValue>)
+
+	template<typename TValue>
+	constexpr Tensor<TValue>::Tensor() :
+		_order(0),
 		_length(0),
+		_sizes(nullptr),
+		_values(nullptr),
 		_owner(true)
 	{
-		static_assert(Order > 0);
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const uint64_t* shape) : Tensor<TValue, Order>()
+	template<typename TValue>
+	constexpr Tensor<TValue>* Tensor<TValue>::createAroundMemory(uint64_t order, const uint64_t* sizes, TValue* memory)
 	{
-		create(Order, shape);
+		assert(order != 0);
+		assert(std::find(sizes, sizes + order, 0) == sizes + order);
+		assert(memory);
+
+		Tensor<TValue>* tensor = new Tensor<TValue>();
+
+		tensor->_order = order;
+
+		tensor->_length = std::accumulate(sizes, sizes + order, 1, std::multiplies<uint64_t>());
+
+		tensor->_sizes = new uint64_t[order];
+		std::copy_n(sizes, order, tensor->_sizes);
+
+		tensor->_values = memory;
+
+		tensor->_owner = false;
+
+		return tensor;
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const uint64_t* shape, const TValue& value) : Tensor<TValue, Order>(shape)
+	template<typename TValue>
+	constexpr Tensor<TValue>* Tensor<TValue>::createAroundMemory(const std::initializer_list<uint64_t>& sizes, TValue* memory)
 	{
-		std::fill(_values, _values + _length, value);
+		return createAroundMemory(sizes.size(), sizes.begin(), memory);
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const uint64_t* shape, const TValue* values) : Tensor<TValue, Order>(shape)
+	template<typename TValue>
+	constexpr Tensor<TValue>& Tensor<TValue>::fill(const TValue& value)
 	{
-		std::copy(values, values + _length, _values);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const uint64_t* shape, const std::vector<TValue>& values) : Tensor<TValue, Order>(shape, values.data())
-	{
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const uint64_t* shape, const std::initializer_list<TValue>& values) : Tensor<TValue, Order>(shape, values.begin())
-	{
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::vector<uint64_t>& shape) : Tensor<TValue, Order>(shape.data())
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::vector<uint64_t>& shape, const TValue& value) : Tensor<TValue, Order>(shape.data(), value)
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::vector<uint64_t>& shape, const TValue* values) : Tensor<TValue, Order>(shape.data(), values)
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::vector<uint64_t>& shape, const std::vector<TValue>& values) : Tensor<TValue, Order>(shape.data(), values.data())
-	{
-		assert(shape.size() == Order);
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::vector<uint64_t>& shape, const std::initializer_list<TValue>& values) : Tensor<TValue, Order>(shape.data(), values.begin())
-	{
-		assert(shape.size() == Order);
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::initializer_list<uint64_t>& shape) : Tensor<TValue, Order>(shape.begin())
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::initializer_list<uint64_t>& shape, const TValue& value) : Tensor<TValue, Order>(shape.begin(), value)
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::initializer_list<uint64_t>& shape, const TValue* values) : Tensor<TValue, Order>(shape.begin(), values)
-	{
-		assert(shape.size() == Order);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::initializer_list<uint64_t>& shape, const std::vector<TValue>& values) : Tensor<TValue, Order>(shape.begin(), values.data())
-	{
-		assert(shape.size() == Order);
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const std::initializer_list<uint64_t>& shape, const std::initializer_list<TValue>& values) : Tensor<TValue, Order>(shape.begin(), values.begin())
-	{
-		assert(shape.size() == Order);
-		assert(values.size() == _length);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const TensorBase<TValue>& tensor) : Tensor<TValue, Order>()
-	{
-		create(tensor.getOrder(), tensor.getShape());
-		copyFrom(tensor);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(const Tensor<TValue, Order>& tensor) : Tensor<TValue, Order>(dynamic_cast<const TensorBase<TValue>&>(tensor))
-	{
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::Tensor(Tensor<TValue, Order>&& tensor) : Tensor<TValue, Order>()
-	{
-		moveFrom(std::move(tensor));
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>& Tensor<TValue, Order>::operator=(const Tensor<TValue, Order>& tensor)
-	{
-		copyFrom(tensor);
-		return *this;
-	}
-	
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>& Tensor<TValue, Order>::operator=(Tensor<TValue, Order>&& tensor)
-	{
-		moveFrom(std::move(tensor));
+		std::fill_n(_values, _length, value);
 		return *this;
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>* Tensor<TValue, Order>::clone() const
+	template<typename TValue>
+	template<std::input_iterator TInput>
+	constexpr Tensor<TValue>& Tensor<TValue>::copy(TInput it)
 	{
-		return new Tensor<TValue, Order>(*this);
+		std::copy_n(it, _length, _values);
+		return *this;
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr typename Tensor<TValue, Order>::SubTensor& Tensor<TValue, Order>::operator[](uint64_t i)
+	template<typename TValue>
+	constexpr Tensor<TValue>& Tensor<TValue>::transform(const std::function<TValue(const TValue&)>& unaryOp)
 	{
-		assert(i < _shape[0]);
-		return _tree[i * _treeOffset];
+		std::transform(_values, _values + _length, _values, unaryOp);
+		return *this;
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr const typename Tensor<TValue, Order>::SubTensor& Tensor<TValue, Order>::operator[](uint64_t i) const
+	template<typename TValue>
+	template<std::input_iterator TInput>
+	constexpr Tensor<TValue>& Tensor<TValue>::transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp)
 	{
-		assert(i < _shape[0]);
-		return _tree[i * _treeOffset];
+		std::transform(_values, _values + _length, it, _values, binaryOp);
+		return *this;
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr Tensor<TValue>& Tensor<TValue>::operator+=(const TTensor& tensor)
+	{
+		return transform(tensor.begin(), std::plus<TValue>());
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr Tensor<TValue>& Tensor<TValue>::operator-=(const TTensor& tensor)
+	{
+		return transform(tensor.begin(), std::minus<TValue>());
+	}
+
+	template<typename TValue>
+	template<typename TScalar>
+	constexpr Tensor<TValue>& Tensor<TValue>::operator*=(const TScalar& scalar)
+	{
+		return transform([&](const TValue& x) { return x * scalar; });
+	}
+
+	template<typename TValue>
+	template<typename TScalar>
+	constexpr Tensor<TValue>& Tensor<TValue>::operator/=(const TScalar& scalar)
+	{
+		return transform([&](const TValue& x) { return x / scalar; });
+	}
+
+	template<typename TValue>
+	constexpr Tensor<TValue>& Tensor<TValue>::negate()
+	{
+		return transform(std::negate<TValue>());
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	constexpr void Tensor<TValue>::tensorProduct(const TTensorA& tensorA, const TTensorB& tensorB)
+	{
+		const uint64_t orderA = tensorA.getOrder();
+		const uint64_t orderB = tensorB.getOrder();
+		const uint64_t* sizesA = tensorA.getSizes();
+		const uint64_t* sizesB = tensorB.getSizes();
+
+		assert(orderA + orderB == _order);
+		assert(std::equal(sizesA, sizesA + orderA, _sizes));
+		assert(std::equal(sizesB, sizesB + orderB, _sizes + orderA));
+
+		const uint64_t length = tensorA.getElementCount();
+
+		TValue* it = _values;
+		for (uint64_t i = 0, j = 0, k = 0; i < _length; ++i, ++k, ++it)
+		{
+			if (k == length)
+			{
+				k = 0;
+				++j;
+			}
+
+			*it = tensorA.get(j) * tensorB.get(k);
+		}
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr Tensor<TValue>& Tensor<TValue>::hadamardProduct(const TTensor& tensor)
+	{
+		return transform(tensor.begin(), std::multiplies<TValue>());
+	}
+
+	template<typename TValue>
+	constexpr Tensor<TValue>& Tensor<TValue>::fft()
+	{
+		if constexpr (IsComplex<TValue>)
+		{
+			uint64_t* stride = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+			std::fill(stride, stride + _order, 0);
+
+			uint64_t* offset = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+			std::fill<uint64_t*, uint64_t>(offset, offset + _order, 1);
+
+			TValue** exponentials = reinterpret_cast<TValue**>(alloca(_order * sizeof(TValue*)));
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				exponentials[i] = reinterpret_cast<TValue*>(alloca(_sizes[i] * sizeof(TValue)));
+				for (uint64_t j = 0; j < _sizes[i]; ++j)
+				{
+					exponentials[i][j] = std::exp(TValue(0, -2 * std::numbers::pi * j / _sizes[i]));
+				}
+			}
+
+			_cooleyTukey(exponentials, _sizes, offset, stride);
+		}
+		else
+		{
+			assert(false);
+		}
+
+		return *this;
+	}
+
+	template<typename TValue>
+	constexpr Tensor<TValue>& Tensor<TValue>::ifft()
+	{
+		if constexpr (IsComplex<TValue>)
+		{
+			uint64_t* stride = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+			std::fill(stride, stride + _order, 0);
+
+			uint64_t* offset = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+			std::fill<uint64_t*, uint64_t>(offset, offset + _order, 1);
+
+			TValue** exponentials = reinterpret_cast<TValue**>(alloca(_order * sizeof(TValue*)));
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				exponentials[i] = reinterpret_cast<TValue*>(alloca(_sizes[i] * sizeof(TValue)));
+				for (uint64_t j = 0; j < _sizes[i]; ++j)
+				{
+					exponentials[i][j] = std::exp(TValue(0, 2 * std::numbers::pi * j / _sizes[i]));
+				}
+			}
+
+			_cooleyTukey(exponentials, _sizes, offset, stride);
+
+			*this /= TValue(_length);
+		}
+		else
+		{
+			assert(false);
+		}
+
+		return *this;
+	}
+
+	template<typename TValue>
+	template<BorderBehaviour BBehaviour, TensorConcept<TValue> TTensor>
+	constexpr Tensor<TValue>& Tensor<TValue>::convolution(const TTensor& kernel)
+	{
+		assert(_order == kernel.getOrder());
+		
+		const TensorShape shape{ _order, _sizes };
+		const TensorShape kernelShape{ kernel.getOrder(), kernel.getSizes() };
+		
+		// Do a copy of *this
+		Tensor<TValue> tensor(*this);
+		
+		// Check that the kernel's sizes are odd
+		for (uint64_t i = 0; i < _order; i++)
+		{
+			assert(kernelShape.sizes[i] % 2 == 1);
+			assert(kernelShape.sizes[i] <= _sizes[i]);
+		}
+		
+		// Compute offset (to center the kernel)
+		int64_t* offset = reinterpret_cast<int64_t*>(alloca(_order * sizeof(int64_t)));
+		for (uint64_t i = 0; i < _order; i++)
+		{
+			offset[i] = static_cast<int64_t>(kernelShape.sizes[i] / 2);
+		}
+		
+		// For each element of the original tensor
+		int64_t* offsetedIndices = reinterpret_cast<int64_t*>(alloca(_order * sizeof(int64_t)));
+		for (const TensorPosition& pos : shape)
+		{
+			TValue value = 0;
+		
+			// For each element of the kernel
+			for (const TensorPosition& kernelPos : kernelShape)
+			{
+				bool setToZero = false;
+		
+				int64_t* itOffsetedIndices = offsetedIndices;
+				const uint64_t* itSizes = _sizes;
+				const int64_t* itOffset = offset;
+				const uint64_t* itIndices = pos.indices;
+				const uint64_t* itKernelIndices = kernelPos.indices;
+		
+				// Compute the corresponding indices to poll
+				for (uint64_t k = 0; k < _order; ++k, ++itKernelIndices, ++itOffsetedIndices, ++itSizes, ++itOffset, ++itIndices)
+				{
+					*itOffsetedIndices = static_cast<int64_t>(*itIndices) + *itOffset - static_cast<int64_t>(*itKernelIndices);
+		
+					if constexpr (BBehaviour == BorderBehaviour::Zero)
+					{
+						if (*itOffsetedIndices < 0 || *itOffsetedIndices >= *itSizes)
+						{
+							setToZero = true;
+							break;
+						}
+					}
+					else if constexpr (BBehaviour == BorderBehaviour::Continuous)
+					{
+						*itOffsetedIndices = std::clamp<int64_t>(*itOffsetedIndices, 0, *itSizes - 1);
+					}
+					else if constexpr (BBehaviour == BorderBehaviour::Periodic)
+					{
+						*itOffsetedIndices = (*itOffsetedIndices + *itSizes) % *itSizes;
+					}
+				}
+		
+				// Add the product to the result
+				if (!setToZero)
+				{
+					value += tensor.get(reinterpret_cast<uint64_t*>(offsetedIndices)) * kernel.get(kernelPos.index);
+				}
+			}
+		
+			_values[pos.index] = value;
+		}
+		
+		return *this;
 	}
 
 	namespace _scp
 	{
-		template<typename TValue, uint64_t Order>
-		void cooleyTukey(Tensor<TValue, Order>& a, const std::array<std::vector<TValue>, Order>& exponentials, const uint64_t* shape, const uint64_t* offset, uint64_t* stride)
+		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
+		constexpr TValue lerp(const TTensor& tensor, const uint64_t* sizesRev, uint64_t* indicesRev, const TScalar* coeffsRev, uint64_t nCoeffs)
 		{
-			// Directly exit if it is a single variable
-
+			if (nCoeffs == 0)
 			{
-				uint64_t i = 0;
-				for (; i < Order; ++i)
-				{
-					if (shape[i] != 1)
-					{
-						break;
-					}
-				}
-
-				if (i == Order)
-				{
-					return;
-				}
+				return tensor.get(indicesRev + 1);
 			}
-
-			// Useful variables
-
-			uint64_t cellShape[Order];
-			for (uint64_t i = 0; i < Order; ++i)
+		
+			const TValue x = _scp::lerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+			++(*indicesRev);
+			const TValue y = *indicesRev == *sizesRev ? x : _scp::lerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+			--(*indicesRev);
+		
+			return *coeffsRev * y + (1.0 - *coeffsRev) * x;
+		}
+		
+		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
+		constexpr TValue cerp(const TTensor& tensor, const uint64_t* sizesRev, uint64_t* indicesRev, const TScalar* coeffsRev, uint64_t nCoeffs)
+		{
+			if (nCoeffs == 0)
 			{
-				cellShape[i] = shape[i];
-				for (uint64_t j = 2; j < shape[i]; ++j)
-				{
-					if (shape[i] % j == 0)
-					{
-						cellShape[i] = j;
-						break;
-					}
-				}
+				return tensor.get(indicesRev + 1);
 			}
-
-			uint64_t subShape[Order];
-			for (uint64_t i = 0; i < Order; ++i)
+		
+			const TValue x1 = _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+			--(*indicesRev);
+			const TValue x0 = *indicesRev == UINT64_MAX ? x1 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+			*indicesRev += 2;
+			const TValue x2 = *indicesRev == *sizesRev ? x1 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+			TValue x3 = x2;
+			if (*indicesRev != *sizesRev)
 			{
-				subShape[i] = shape[i] / cellShape[i];
+				++(*indicesRev);
+				x3 = *indicesRev == *sizesRev ? x2 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
+				--(*indicesRev);
 			}
+			--(*indicesRev);
+		
+			const TValue a = -0.5*x0 + 1.5*x1 - 1.5*x2 + 0.5*x3;
+			const TValue b =      x0 - 2.5*x1 + 2.0*x2 - 0.5*x3;
+			const TValue c = -0.5*x0          + 0.5*x2;
+			const TValue d =               x1;
+		
+			const TScalar& t = *coeffsRev;
+		
+			return d + t*(c + t*(b + t*a));
+		}
+	}
 
-			uint64_t subOffset[Order];
-			for (uint64_t i = 0; i < Order; ++i)
+	template<typename TValue>
+	template<typename TScalar, InterpolationMethod IMethod, TensorConcept<TValue> TTensor>
+	constexpr void Tensor<TValue>::interpolation(const TTensor& tensor)
+	{
+		const TensorShape shape{ _order, _sizes };
+		const TensorShape tensorShape{ tensor.getOrder(), tensor.getSizes() };
+		
+		assert(shape.order == tensorShape.order);
+		
+		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		TScalar* coeffs = reinterpret_cast<TScalar*>(alloca(_order * sizeof(TScalar)));
+
+		TScalar* sizesRatio = reinterpret_cast<TScalar*>(alloca(_order * sizeof(TScalar)));
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			sizesRatio[i] = static_cast<TScalar>(tensorShape.sizes[i] - 1) / (_sizes[i] - 1);
+		}
+		
+		const uint64_t* sizesRev = tensorShape.sizes + _order - 1;
+		uint64_t* indicesRev = indices + _order - 1;
+		const TScalar* coeffsRev = coeffs + _order - 1;
+		
+		for (const TensorPosition& pos : shape)
+		{
+			for (uint64_t i = 0; i < _order; ++i)
 			{
-				subOffset[i] = offset[i] * cellShape[i];
+				coeffs[i] = pos.indices[i] * sizesRatio[i];
+				indices[i] = static_cast<uint64_t>(coeffs[i]);
+				coeffs[i] -= indices[i];
 			}
-
-			// Compute fft of each sub tensor
-
-			TensorSweep<Order> cellSweep(cellShape);
-			for (const TensorPosition& aCellPos : cellSweep)
+		
+			if constexpr (IMethod == InterpolationMethod::Nearest)
 			{
-				for (uint64_t i = 0; i < Order; ++i)
-				{
-					stride[i] += aCellPos.indices[i] * offset[i];
-				}
-
-				cooleyTukey(a, exponentials, subShape, subOffset, stride);
-
-				for (uint64_t i = 0; i < Order; ++i)
-				{
-					stride[i] -= aCellPos.indices[i] * offset[i];
-				}
+				_values[pos.index] = tensor.get(indices);
 			}
-
-			// Store the coefficients calculated before merging them
-
-			Tensor<TValue, Order> tmp(shape);
-			uint64_t indices[Order];
-			for (const TensorPosition& pos : tmp)
+			else if constexpr (IMethod == InterpolationMethod::Linear)
 			{
-				for (uint64_t i = 0; i < Order; ++i)
-				{
-					indices[i] = stride[i] + pos.indices[i] * offset[i];
-				}
-
-				tmp.set(pos.indices, a.get(indices));
+				_values[pos.index] = _scp::lerp<TValue>(tensor, sizesRev, indicesRev, coeffsRev, _order);
 			}
-
-			// Iterate over a sub tensor and merge each cell asociated
-
-			uint64_t aCellIndices[Order];
-			uint64_t tmpCellIndices[Order];
-			uint64_t aIndices[Order];
-			uint64_t tmpIndices[Order];
-			TensorSweep<Order> subSweep(subShape);
-			for (const TensorPosition& subPos : subSweep)
+			else if constexpr (IMethod == InterpolationMethod::Cubic)
 			{
-				// Compute the position of the corner of the cell on 'a' and on 'tmp'
-
-				for (uint64_t i = 0; i < Order; ++i)
-				{
-					aCellIndices[i] = stride[i] + subPos.indices[i] * offset[i];
-					tmpCellIndices[i] = subPos.indices[i] * cellShape[i];
-				}
-
-				// Merge the elements of the cell of 'tmp' into the elements of the cell of 'a'
-
-				for (const TensorPosition& aCellPos : cellSweep)
-				{
-					for (uint64_t i = 0; i < Order; ++i)
-					{
-						aIndices[i] = aCellIndices[i] + aCellPos.indices[i] * subShape[i] * offset[i];
-					}
-
-					TValue value = 0;
-
-					for (const TensorPosition& tmpCellPos : cellSweep)
-					{
-						for (uint64_t i = 0; i < Order; ++i)
-						{
-							tmpIndices[i] = tmpCellIndices[i] + tmpCellPos.indices[i];
-						}
-
-						TValue factor = 1;
-						for (uint64_t i = 0; i < Order; ++i)
-						{
-							factor *= exponentials[i][((subPos.indices[i] * tmpCellPos.indices[i]) % shape[i]) * offset[i]];
-							factor *= exponentials[i][((tmpCellPos.indices[i] * aCellPos.indices[i]) % cellShape[i]) * subShape[i] * offset[i]];
-						}
-
-						value += factor * tmp.get(tmpIndices);
-					}
-
-					a.set(aIndices, value);
-				}
+				_values[pos.index] = _scp::cerp<TValue>(tensor, sizesRev, indicesRev, coeffsRev, _order);
 			}
 		}
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>& Tensor<TValue, Order>::fft()
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Tensor<TValue>::tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j)
 	{
-		if constexpr (_scp::IsComplex<TValue>::value)
+		// TODO
+
+		// const TensorShape shape{ getOrder(), getSizes() };
+		// const TensorShape resultShape{ result.getOrder(), result.getSizes() };
+		// 
+		// assert(shape.order > 2);
+		// assert(resultShape.order == shape.order - 2);
+		// assert(i != j);
+		// assert(shape.sizes[i] == shape.sizes[j]);
+		// 
+		// if (i > j)
+		// {
+		// 	std::swap(i, j);
+		// }
+		// 
+		// assert(i == 0 || std::equal(shape.sizes, shape.sizes + i, resultShape.sizes));
+		// assert(j == i + 1 || std::equal(shape.sizes + i + 1, shape.sizes + j, resultShape.sizes + i));
+		// assert(j == shape.order - 1 || std::equal(shape.sizes + j + 1, shape.sizes + shape.order, resultShape.sizes + j - 1));
+		// 
+		// uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(shape.order * sizeof(uint64_t)));
+		// for (const TensorPosition& pos : resultShape)
+		// {
+		// 	if (i != 0)
+		// 	{
+		// 		std::copy(pos.indices, pos.indices + i, indices);
+		// 	}
+		// 	if (i != j - 1)
+		// 	{
+		// 		std::copy(pos.indices + i, pos.indices + j - 1, indices + i + 1);
+		// 	}
+		// 	if (j != shape.order - 1)
+		// 	{
+		// 		std::copy(pos.indices + j - 1, pos.indices + resultShape.order, indices + j + 1);
+		// 	}
+		// 
+		// 	TValue value = 0;
+		// 	for (uint64_t k = 0; k < shape.sizes[i]; ++k)
+		// 	{
+		// 		indices[i] = k;
+		// 		indices[j] = k;
+		// 		value += get(indices);
+		// 	}
+		// 
+		// 	result.set(pos.index, value);
+		// }
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr bool Tensor<TValue>::operator==(const TTensor& tensor) const
+	{
+		if (_order != tensor.getOrder())
 		{
-			uint64_t stride[Order];
-			std::fill(stride, stride + Order, 0);
+			return false;
+		}
 
-			uint64_t offset[Order];
-			std::fill<uint64_t*, uint64_t>(offset, offset + Order, 1);
+		if (!std::equal(_sizes, _sizes + _order, tensor.getSizes()))
+		{
+			return false;
+		}
 
-			std::array<std::vector<TValue>, Order> exponentials;
-			for (uint64_t i = 0; i < Order; ++i)
+		return std::equal(_values, _values + _length, tensor.begin());
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr bool Tensor<TValue>::operator!=(const TTensor& tensor) const
+	{
+		return !operator==(tensor);
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr TValue Tensor<TValue>::innerProduct(const TTensor& tensor) const
+	{
+		return std::inner_product(_values, _values + _length, tensor.begin(), TValue(0));
+	}
+
+	template<typename TValue>
+	constexpr TValue Tensor<TValue>::norm() const
+	{
+		return std::inner_product(_values, _values + _length, _values, TValue(0));
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::minElement(const std::function<bool(const TValue&, const TValue&)>& compare) const
+	{
+		return *std::min_element(_values, _values + _length, compare);
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::maxElement(const std::function<bool(const TValue&, const TValue&)>& compare) const
+	{
+		return *std::max_element(_values, _values + _length, compare);
+	}
+
+	template<typename TValue>
+	template<typename TScalar, InterpolationMethod IMethod>
+	constexpr TValue Tensor<TValue>::getInterpolated(const TScalar* scalarIndices) const
+	{
+		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		TScalar* coeffs = reinterpret_cast<TScalar*>(alloca(_order * sizeof(TScalar)));
+
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			assert(scalarIndices[i] >= 0 && scalarIndices[i] <= _sizes[i] - 1);
+			indices[i] = static_cast<uint64_t>(scalarIndices[i]);
+			coeffs[i] = scalarIndices[i] - indices[i];
+		}
+
+		if constexpr (IMethod == InterpolationMethod::Nearest)
+		{
+			return get(indices);
+		}
+		else if constexpr (IMethod == InterpolationMethod::Linear)
+		{
+			return _scp::lerp<TValue>(*this, _sizes + _order - 1, indices + _order - 1, coeffs + _order - 1, _order);
+		}
+		else if constexpr (IMethod == InterpolationMethod::Cubic)
+		{
+			return _scp::cerp<TValue>(*this, _sizes + _order - 1, indices + _order - 1, coeffs + _order - 1, _order);
+		}
+	}
+
+	template<typename TValue>
+	template<typename TScalar, InterpolationMethod IMethod>
+	constexpr TValue Tensor<TValue>::getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const
+	{
+		assert(scalarIndices.size() == _order);
+		return getInterpolated(scalarIndices.begin());
+	}
+
+	template<typename TValue>
+	template<BorderBehaviour BBehaviour>
+	constexpr const TValue& Tensor<TValue>::getOutOfBound(const int64_t* indices) const
+	{
+		uint64_t* realIndices = reinterpret_cast<uint64_t*>(alloca(sizeof(uint64_t) * _order));
+
+		if constexpr (BBehaviour == BorderBehaviour::Zero)
+		{
+			static constexpr TValue zero = 0;
+
+			bool isOut = false;
+			for (uint64_t i = 0; !isOut && i < _order; ++i)
 			{
-				exponentials[i].resize(_shape[i]);
-				for (uint64_t j = 0; j < _shape[i]; ++j)
-				{
-					exponentials[i][j] = std::exp(TValue(0, -2 * std::numbers::pi * j / _shape[i]));
-				}
+				isOut = indices[i] < 0 || indices[i] >= _sizes[i];
 			}
 
-			_scp::cooleyTukey(*this, exponentials, _shape, offset, stride);
-		}
-		else
-		{
-			assert(false);
-		}
-
-		return *this;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>& Tensor<TValue, Order>::ifft()
-	{
-		if constexpr (_scp::IsComplex<TValue>::value)
-		{
-			uint64_t stride[Order];
-			std::fill(stride, stride + Order, 0);
-
-			uint64_t offset[Order];
-			std::fill<uint64_t*, uint64_t>(offset, offset + Order, 1);
-
-			std::array<std::vector<TValue>, Order> exponentials;
-			for (uint64_t i = 0; i < Order; ++i)
+			if (isOut)
 			{
-				exponentials[i].resize(_shape[i]);
-				for (uint64_t j = 0; j < _shape[i]; ++j)
-				{
-					exponentials[i][j] = std::exp(TValue(0, 2 * std::numbers::pi * j / _shape[i]));
-				}
-			}
-
-			_scp::cooleyTukey(*this, exponentials, _shape, offset, stride);
-
-			*this /= _length;
-		}
-		else
-		{
-			assert(false);
-		}
-
-		return *this;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr const TValue& Tensor<TValue, Order>::get(uint64_t internalIndex) const
-	{
-		assert(internalIndex < _length);
-		return _values[internalIndex];
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr const TValue& Tensor<TValue, Order>::get(const uint64_t* indices) const
-	{
-		return get(getInternalIndex(indices));
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr const TValue& Tensor<TValue, Order>::get(const std::initializer_list<uint64_t>& indices) const
-	{
-		assert(indices.size() == Order);
-		return get(getInternalIndex(indices.begin()));
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::set(uint64_t internalIndex, const TValue& value)
-	{
-		assert(internalIndex < _length);
-		_values[internalIndex] = value;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::set(const uint64_t* indices, const TValue& value)
-	{
-		set(getInternalIndex(indices), value);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::set(const std::initializer_list<uint64_t>& indices, const TValue& value)
-	{
-		assert(indices.size() == Order);
-		set(getInternalIndex(indices.begin()), value);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::getIndices(uint64_t internalIndex, uint64_t* indices) const
-	{
-		uint64_t factor = _length;
-		for (uint64_t i = 0; i < Order; ++i)
-		{
-			factor /= _shape[i];
-			const uint64_t index = internalIndex / factor;
-			indices[i] = index;
-			internalIndex -= index * factor;
-		}
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr uint64_t Tensor<TValue, Order>::getInternalIndex(const uint64_t* indices) const
-	{
-		uint64_t index = 0;
-		for (uint64_t i = 0; i < Order; ++i)
-		{
-			assert(indices[i] < _shape[i]);
-			index = index * _shape[i] + indices[i];
-		}
-
-		return index;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr uint64_t Tensor<TValue, Order>::getInternalLength() const
-	{
-		return _length;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr uint64_t Tensor<TValue, Order>::getOrder() const
-	{
-		return Order;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr const uint64_t* Tensor<TValue, Order>::getShape() const
-	{
-		return _shape;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr uint64_t Tensor<TValue, Order>::getSize(uint64_t i) const
-	{
-		assert(i < Order);
-		return _shape[i];
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr uint64_t Tensor<TValue, Order>::getTotalLength() const
-	{
-		return _length;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr TValue* Tensor<TValue, Order>::getData()
-	{
-		return _values;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr const TValue* Tensor<TValue, Order>::getData() const
-	{
-		return _values;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::initSubTensor(TValue* values, uint64_t* shape, uint64_t length, uint64_t treeLength)
-	{
-		_values = values;
-		if constexpr (Order == 1)
-		{
-			_tree = values;
-			_treeOffset = 1;
-		}
-		else
-		{
-			_tree = reinterpret_cast<SubTensor*>(this + 1);
-			_treeOffset = treeLength / shape[0];
-
-			uint64_t subLength = length / shape[0];
-			for (uint64_t i = 0; i < shape[0]; ++i)
-			{
-				_tree[i * _treeOffset].initSubTensor(_values + i * subLength, shape + 1, subLength, _treeOffset - 1);
-			}
-		}
-		_shape = shape;
-		_length = length;
-		_owner = false;
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::create(uint64_t order, const uint64_t* shape)
-	{
-		assert(order == Order);
-		assert(_values == nullptr);
-		assert(_owner);
-
-		_shape = new uint64_t[Order];
-		std::copy(shape, shape + Order, _shape);
-
-		_length = std::accumulate(_shape, _shape + Order, 1, std::multiplies<uint64_t>());
-		assert(_length != 0);
-
-		_values = new TValue[_length];
-
-		if constexpr (Order == 1)
-		{
-			_tree = _values;
-			_treeOffset = 1;
-		}
-		else
-		{
-			uint64_t treeLength = 0;
-			const uint64_t* it = _shape + Order - 2;
-			const uint64_t* const itEnd = _shape - 1;
-			while (it != itEnd)
-			{
-				treeLength = (treeLength + 1) * *it;
-				--it;
-			}
-
-			_tree = new SubTensor[treeLength];
-			_treeOffset = treeLength / _shape[0];
-
-			uint64_t subLength = _length / _shape[0];
-			for (uint64_t i = 0; i < _shape[0]; ++i)
-			{
-				_tree[i * _treeOffset].initSubTensor(_values + i * subLength, _shape + 1, subLength, _treeOffset - 1);
-			}
-		}
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::copyFrom(const TensorBase<TValue>& tensor)
-	{
-		assert(_owner || (tensor.getOrder() == Order && std::equal(_shape, _shape + Order, tensor.getShape())));
-		DenseTensor<TValue>::copyFrom(tensor);
-	}
-
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::moveFrom(TensorBase<TValue>&& tensor)
-	{
-		Tensor<TValue, Order>* spTensor = dynamic_cast<Tensor<TValue, Order>*>(&tensor);
-		if (spTensor)
-		{
-			if (_owner && spTensor->_owner)
-			{
-				destroy();
-
-				_values = spTensor->_values;
-				_tree = spTensor->_tree;
-				_shape = spTensor->_shape;
-				_treeOffset = spTensor->_treeOffset;
-				_length = spTensor->_length;
-
-				spTensor->_values = nullptr;
-				spTensor->_tree = nullptr;
-				spTensor->_shape = nullptr;
-				spTensor->_treeOffset = 1;
-				spTensor->_length = 0;
+				return zero;
 			}
 			else
 			{
-				copyFrom(tensor);
+				std::copy_n(indices, _order, realIndices);
+				return get(realIndices);
+			}
+		}
+		else if constexpr (BBehaviour == BorderBehaviour::Continuous)
+		{
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				if (indices[i] < 0)
+				{
+					realIndices[i] = 0;
+				}
+				else if (indices[i] < _sizes[i])
+				{
+					realIndices[i] = indices[i];
+				}
+				else
+				{
+					realIndices[i] = _sizes[i] - 1;
+				}
+			}
+
+			return get(realIndices);
+		}
+		else if constexpr (BBehaviour == BorderBehaviour::Periodic)
+		{
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				if (indices[i] < 0)
+				{
+					realIndices[i] = (indices[i] % _sizes[i]) + _sizes[i];
+				}
+				else if (indices[i] >= _sizes[i])
+				{
+					realIndices[i] = indices[i] % _sizes[i];
+				}
+				else
+				{
+					realIndices[i] = indices[i];
+				}
+			}
+
+			return get(realIndices);
+		}
+	}
+
+	template<typename TValue>
+	template<BorderBehaviour BBehaviour>
+	constexpr const TValue& Tensor<TValue>::getOutOfBound(const std::initializer_list<int64_t>& indices) const
+	{
+		assert(indices.size() == _order);
+		return getOutOfBound<BBehaviour>(indices.begin());
+	}
+
+	template<typename TValue>
+	constexpr TValue* Tensor<TValue>::begin()
+	{
+		return _values;
+	}
+
+	template<typename TValue>
+	constexpr TValue* Tensor<TValue>::end()
+	{
+		return _values + _length;
+	}
+
+	template<typename TValue>
+	constexpr const TValue* Tensor<TValue>::begin() const
+	{
+		return _values;
+	}
+
+	template<typename TValue>
+	constexpr const TValue* Tensor<TValue>::end() const
+	{
+		return _values + _length;
+	}
+
+	template<typename TValue>
+	constexpr const TValue* Tensor<TValue>::cbegin() const
+	{
+		return _values;
+	}
+
+	template<typename TValue>
+	constexpr const TValue* Tensor<TValue>::cend() const
+	{
+		return _values + _length;
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::get(uint64_t index) const
+	{
+		return (*this)[index];
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::get(const uint64_t* indices) const
+	{
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices) < _length);
+		return _values[shape.getIndex(indices)];
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::get(const std::initializer_list<uint64_t>& indices) const
+	{
+		return (*this)[indices];
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::set(uint64_t index, const TValue& value)
+	{
+		(*this)[index] = value;
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::set(const uint64_t* indices, const TValue& value)
+	{
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices) < _length);
+		_values[shape.getIndex(indices)] = value;
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::set(const std::initializer_list<uint64_t>& indices, const TValue& value)
+	{
+		(*this)[indices] = value;
+	}
+
+	template<typename TValue>
+	constexpr uint64_t Tensor<TValue>::getOrder() const
+	{
+		return _order;
+	}
+
+	template<typename TValue>
+	constexpr const uint64_t* Tensor<TValue>::getSizes() const
+	{
+		return _sizes;
+	}
+
+	template<typename TValue>
+	constexpr uint64_t Tensor<TValue>::getSize(uint64_t i) const
+	{
+		assert(i < _order);
+		return _sizes[i];
+	}
+
+	template<typename TValue>
+	constexpr uint64_t Tensor<TValue>::getElementCount() const
+	{
+		return _length;
+	}
+
+	template<typename TValue>
+	constexpr TValue& Tensor<TValue>::operator[](uint64_t index)
+	{
+		assert(index < _length);
+		return _values[index];
+	}
+
+	template<typename TValue>
+	constexpr TValue& Tensor<TValue>::operator[](const std::initializer_list<uint64_t>& indices)
+	{
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices.begin()) < _length);
+		return _values[shape.getIndex(indices.begin())];
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::operator[](uint64_t index) const
+	{
+		assert(index < _length);
+		return _values[index];
+	}
+
+	template<typename TValue>
+	constexpr const TValue& Tensor<TValue>::operator[](const std::initializer_list<uint64_t>& indices) const
+	{
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices.begin()) < _length);
+		return _values[shape.getIndex(indices.begin())];
+	}
+
+	template<typename TValue>
+	constexpr TValue& Tensor<TValue>::get(uint64_t index)
+	{
+		return (*this)[index];
+	}
+
+	template<typename TValue>
+	constexpr TValue& Tensor<TValue>::get(const uint64_t* indices)
+	{
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices) < _length);
+		return _values[shape.getIndex(indices)];
+	}
+
+	template<typename TValue>
+	constexpr TValue& Tensor<TValue>::get(const std::initializer_list<uint64_t>& indices)
+	{
+		return (*this)[indices];
+	}
+
+	template<typename TValue>
+	constexpr TValue* Tensor<TValue>::getData()
+	{
+		return _values;
+	}
+
+	template<typename TValue>
+	constexpr const TValue* Tensor<TValue>::getData() const
+	{
+		return _values;
+	}
+
+	template<typename TValue>
+	constexpr Tensor<TValue>::~Tensor()
+	{
+		_destroy();
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::_create(uint64_t order, const uint64_t* sizes)
+	{
+		assert(order != 0);
+		assert(std::find(sizes, sizes + order, 0) == sizes + order);
+
+		_order = order;
+
+		_length = std::accumulate(sizes, sizes + order, 1, std::multiplies<uint64_t>());
+
+		_sizes = new uint64_t[_order];
+		std::copy_n(sizes, _order, _sizes);
+
+		_values = new TValue[_length];
+
+		_owner = true;
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Tensor<TValue>::_copyFrom(const TTensor& tensor)
+	{
+		const uint64_t tensorOrder = tensor.getOrder();
+		const uint64_t* tensorSizes = tensor.getSizes();
+
+		if (_order != tensorOrder || !std::equal(_sizes, _sizes + _order, tensorSizes))
+		{
+			_destroy();
+			_create(tensorOrder, tensorSizes);
+		}
+
+		std::copy_n(tensor.begin(), _length, _values);
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Tensor<TValue>::_moveFrom(TTensor&& tensor)
+	{
+		if constexpr (!std::derived_from<TTensor, Tensor<TValue>>)
+		{
+			_copyFrom(tensor);
+			return;
+		}
+
+		if (!_owner || !tensor._owner)
+		{
+			_copyFrom(tensor);
+			return;
+		}
+
+		_destroy();
+
+		_order = tensor._order;
+		_length = tensor._length;
+		_sizes = tensor._sizes;
+		_values = tensor._values;
+
+		tensor._values = nullptr;
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::_destroy()
+	{
+		if (_values)
+		{
+			if (_owner)
+			{
+				delete[] _values;
+			}
+
+			delete[] _sizes;
+		}
+
+		_order = 0;
+		_length = 0;
+		_sizes = nullptr;
+		_values = nullptr;
+		_owner = true;
+	}
+
+	template<typename TValue>
+	constexpr void Tensor<TValue>::_cooleyTukey(const TValue* const* exponentials, const uint64_t* sizes, uint64_t* offset, uint64_t* stride)
+	{
+		const TensorShape shape{ _order, sizes };
+		
+		// Directly exit if it is a single variable
+		
+		if (std::all_of(sizes, sizes + _order, [&](const uint64_t& x) { return x == 1; }))
+		{
+			return;
+		}
+		
+		// Useful variables
+		
+		uint64_t* cellSizes = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			cellSizes[i] = sizes[i];
+			for (uint64_t j = 2; j < sizes[i]; ++j)
+			{
+				if (sizes[i] % j == 0)
+				{
+					cellSizes[i] = j;
+					break;
+				}
+			}
+		}
+		const TensorShape cellShape{ _order, cellSizes };
+		const TensorShapeIterator cellShapeBegin = cellShape.begin();
+		const TensorShapeIterator cellShapeEnd = cellShape.end();
+		
+		uint64_t* subSizes = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			subSizes[i] = sizes[i] / cellSizes[i];
+		}
+		const TensorShape subShape{ _order, subSizes };
+		
+		// Compute fft of each sub tensor
+
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			offset[i] *= cellSizes[i];
+		}
+		
+		for (const TensorPosition& pos : cellShape)
+		{
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				stride[i] += pos.indices[i] * offset[i] / cellSizes[i];
+			}
+		
+			_cooleyTukey(exponentials, subSizes, offset, stride);
+		
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				stride[i] -= pos.indices[i] * offset[i] / cellSizes[i];
+			}
+		}
+
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			offset[i] /= cellSizes[i];
+		}
+		
+		// Store the coefficients calculated before merging them
+		
+		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		uint64_t* cellIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		uint64_t* tmpCellIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		uint64_t* tmpIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+
+		Tensor<TValue> tmp(_order, sizes);
+		for (const TensorPosition& pos : shape)
+		{
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				indices[i] = stride[i] + pos.indices[i] * offset[i];
+			}
+
+			tmp._values[pos.index] = get(indices);
+		}
+		
+		// Iterate over a sub tensor and merge each cell asociated
+		
+		TensorShapeIterator cellShapeIterator = cellShapeBegin;
+		TensorShapeIterator tmpCellShapeIterator = cellShapeBegin;
+		const TensorPosition& cellPos = *cellShapeIterator;
+		const TensorPosition& tmpCellPos = *tmpCellShapeIterator;
+		for (const TensorPosition& subPos : subShape)
+		{
+			// Compute the position of the corner of the cell on '*this' and on 'tmp'
+		
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				cellIndices[i] = stride[i] + subPos.indices[i] * offset[i];
+				tmpCellIndices[i] = subPos.indices[i] * cellSizes[i];
+			}
+		
+			// Merge the elements of the cell of 'tmp' into the elements of the cell of '*this'
+		
+			for (cellShapeIterator = cellShapeBegin; cellShapeIterator != cellShapeEnd; ++cellShapeIterator)
+			{
+				for (uint64_t i = 0; i < _order; ++i)
+				{
+					indices[i] = cellIndices[i] + cellPos.indices[i] * subSizes[i] * offset[i];
+				}
+		
+				TValue value = 0;
+
+				for (tmpCellShapeIterator = cellShapeBegin; tmpCellShapeIterator != cellShapeEnd; ++tmpCellShapeIterator)
+				{
+					for (uint64_t i = 0; i < _order; ++i)
+					{
+						tmpIndices[i] = tmpCellIndices[i] + tmpCellPos.indices[i];
+					}
+		
+					TValue factor = 1;
+					for (uint64_t i = 0; i < _order; ++i)
+					{
+						factor *= exponentials[i][((subPos.indices[i] * tmpCellPos.indices[i]) % sizes[i]) * offset[i]];
+						factor *= exponentials[i][((tmpCellPos.indices[i] * cellPos.indices[i]) % cellSizes[i]) * subSizes[i] * offset[i]];
+					}
+		
+					value += factor * tmp.get(tmpIndices);
+				}
+		
+				set(indices, value);
+			}
+		}
+	}
+
+	
+	SCP_MATRIX_DEF(template<typename TValue>, Matrix, Matrix<TValue>)
+
+	template<typename TValue>
+	constexpr Matrix<TValue>* Matrix<TValue>::createAroundMemory(uint64_t row, uint64_t col, TValue* memory)
+	{
+		assert(row != 0 && col != 0);
+		assert(memory);
+
+		Matrix<TValue>* matrix = new Matrix<TValue>();
+
+		matrix->_order = 2;
+
+		matrix->_length = row * col;
+
+		matrix->_sizes = new uint64_t[2];
+		matrix->_sizes[0] = row;
+		matrix->_sizes[1] = col;
+
+		matrix->_values = memory;
+
+		matrix->_owner = false;
+
+		return matrix;
+	}
+
+	template<typename TValue>
+	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	constexpr void Matrix<TValue>::matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB)
+	{
+		const uint64_t* sizesA = matrixA.getSizes();
+		const uint64_t* sizesB = matrixB.getSizes();
+
+		assert(matrixA.getOrder() == 2);
+		assert(matrixB.getOrder() == 2);
+		assert(sizesA[1] == sizesB[0]);
+		assert(sizesA[0] == _sizes[0]);
+		assert(sizesB[1] == _sizes[1]);
+
+		TValue* it = _values;
+		uint64_t a, b;
+		for (uint64_t i = 0; i < _length; ++i, ++it)
+		{
+			*it = 0;
+
+			b = i % sizesA[0];
+			a = i - b;
+			for (uint64_t k = 0; k < sizesA[1]; ++k, ++a, b += sizesB[1])
+			{
+				*it += matrixA.get(a) * matrixB.get(b);
+			}
+		}
+	}
+
+	template<typename TValue>
+	constexpr Matrix<TValue>& Matrix<TValue>::transpose()
+	{
+		if (_sizes[0] == _sizes[1])
+		{
+			const uint64_t& size = _sizes[0];
+
+			TValue* itA = _values;
+			TValue* itB = _values;
+
+			for (uint64_t j = 0; j < size; ++j)
+			{
+				itA += j + 1;
+				itB += (j + 1) * size;
+
+				for (uint64_t i = j + 1; i < size; ++i, ++itA, itB += size)
+				{
+					std::swap(*itA, *itB);
+				}
+
+				itB -= _length - 1;
 			}
 		}
 		else
 		{
-			DenseTensor<TValue>::moveFrom(std::move(tensor));
-		}
-	}
+			std::vector<bool> visited(_length, false);
+			visited[0] = true;
+			visited[_length - 1] = true;
 
-	template<typename TValue, uint64_t Order>
-	constexpr void Tensor<TValue, Order>::destroy()
-	{
-		if (_owner && _values)
-		{
-			delete[] _values;
-			delete[] _shape;
-			if constexpr (Order != 1)
+			uint64_t n = 0;
+			uint64_t i, j;
+			TValue tmp;
+			while (n != _length)
 			{
-				delete[] _tree;
+				if (visited[n])
+				{
+					++n;
+					continue;
+				}
+
+				tmp = _values[n];
+				visited[n] = true;
+
+				i = n;
+				j = (i % _sizes[0]) * _sizes[1] + i / _sizes[0];
+
+				while (j != n)
+				{
+					_values[i] = _values[j];
+					visited[j] = true;
+
+					i = j;
+					j = (i % _sizes[0]) * _sizes[1] + i / _sizes[0];
+				}
+
+				_values[i] = tmp;
 			}
 
-			_values = nullptr;
-			_tree = nullptr;
-			_shape = nullptr;
-			_treeOffset = 1;
-			_length = 1;
+			std::swap(_sizes[0], _sizes[1]);
 		}
+
+		return *this;
 	}
 
-	template<typename TValue, uint64_t Order>
-	constexpr Tensor<TValue, Order>::~Tensor()
+	template<typename TValue>
+	constexpr Matrix<TValue>& Matrix<TValue>::inverse()
 	{
-		destroy();
-	}
+		assert(_sizes[0] == _sizes[1]);
 
+		static constexpr TValue _zero = 0;
+		static constexpr TValue _one = 1;
 
-	template<typename TValue, uint64_t Order>
-	constexpr TensorIterator<Order> begin(const Tensor<TValue, Order>& tensor)
-	{
-		return TensorIterator<Order>(&tensor, false);
-	}
+		const uint64_t size = _sizes[0];
+		Matrix<ValueType> copy(*this);
 
-	template<typename TValue, uint64_t Order>
-	constexpr TensorIterator<Order> end(const Tensor<TValue, Order>& tensor)
-	{
-		return TensorIterator<Order>(&tensor, true);
-	}
+		TValue* it = nullptr;
+		TValue* copyIt = nullptr;
+		TValue* otherIt = nullptr;
+		TValue* copyOtherIt = nullptr;
+		const TValue* itEnd = nullptr;
+		const TValue* copyItEnd = nullptr;
+		const TValue* otherItEnd = nullptr;
+		const TValue* copyOtherItEnd = nullptr;
 
+		std::fill_n(_values, _length, _zero);
 
-	template<typename TValue, uint64_t Order>
-	Tensor<TValue, Order - 2> tensorContraction(const Tensor<TValue, Order>& tensor, uint64_t i, uint64_t j)
-	{
-		static_assert(Order > 2);
-		assert(i != j);
-		assert(tensor.getSize(i) == tensor.getSize(j));
-
-		if (i > j)
+		it = _values;
+		itEnd = it + _length + size;
+		for (; it != itEnd; it += size + 1)
 		{
-			std::swap(i, j);
+			*it = _one;
 		}
 
-		const uint64_t* tensorShape = tensor.getShape();
-		uint64_t shape[Order - 2];
-		if (i != 0)
+		it = _values;
+		itEnd = it + size;
+		copyIt = copy._values;
+		copyItEnd = copyIt + size;
+		for (uint64_t j = 0; j < size; ++j, it += size + 1, itEnd += size, copyIt += size + 1, copyItEnd += size)
 		{
-			std::copy(tensorShape, tensorShape + i, shape);
+			const TValue pivot = *copyIt;
+
+			if (pivot == _zero)
+			{
+				otherIt = it + size;
+				otherItEnd = itEnd + size;
+				copyOtherIt = copyIt + size;
+				copyOtherItEnd = copyItEnd + size;
+				for (uint64_t i = j + 1; i < size; ++i, otherIt += size, otherItEnd += size, copyOtherIt += size, copyOtherItEnd += size)
+				{
+					const TValue value = *copyOtherIt;
+					if (value != _zero)
+					{
+						std::transform<const TValue*>(it, itEnd, otherIt, it, [&](const TValue& x, const TValue& y) { return x + y / value; });
+						std::transform<const TValue*>(copyIt, copyItEnd, copyOtherIt, copyIt, [&](const TValue& x, const TValue& y) { return x + y / value; });
+
+						break;
+					}
+				}
+
+				if (*copyIt == _zero)
+				{
+					throw std::runtime_error("The matrix cannot be inverted.");
+				}
+			}
+			else if (pivot != _one)
+			{
+				std::transform<const TValue*>(it, itEnd, it, [&](const TValue& x) { return x / pivot; });
+				std::transform<const TValue*>(copyIt, copyItEnd, copyIt, [&](const TValue& x) { return x / pivot; });
+			}
+
+			otherIt = it + size;
+			otherItEnd = itEnd + size;
+			copyOtherIt = copyIt + size;
+			copyOtherItEnd = copyItEnd + size;
+			for (uint64_t i = j + 1; i < size; ++i, otherIt += size, otherItEnd += size, copyOtherIt += size, copyOtherItEnd += size)
+			{
+				const TValue value = *copyOtherIt;
+				if (value != _zero)
+				{
+					std::transform<const TValue*>(otherIt, otherItEnd, it, otherIt, [&](const TValue& x, const TValue& y) { return x - y * value; });
+					std::transform<const TValue*>(copyOtherIt, copyOtherItEnd, copyIt, copyOtherIt, [&](const TValue& x, const TValue& y) { return x - y * value; });
+				}
+			}
 		}
-		if (i != j - 1)
+
+		it = _values + (size - 1) * size;
+		itEnd = it + size;
+		copyIt = copy._values + (size - 1) * size;
+		copyItEnd = copyIt + size;
+		for (uint64_t j = size - 1; j != UINT64_MAX; --j, it -= size, itEnd -= size, copyIt -= size, copyItEnd -= size)
 		{
-			std::copy(tensorShape + i + 1, tensorShape + j, shape + i);
+			otherIt = it - size;
+			otherItEnd = it;
+			copyOtherIt = copyIt - size;
+			copyOtherItEnd = copyIt;
+			for (uint64_t i = j - 1; i != UINT64_MAX; --i, otherIt -= size, otherItEnd -= size, copyOtherIt -= size, copyOtherItEnd -= size)
+			{
+				const TValue value = *(copyOtherIt + j);
+				if (value != _zero)
+				{
+					std::transform<const TValue*>(otherIt, otherItEnd, it, otherIt, [&](const TValue& x, const TValue& y) { return x - y * value; });
+					std::transform<const TValue*>(copyOtherIt, copyOtherItEnd, copyIt, copyOtherIt, [&](const TValue& x, const TValue& y) { return x - y * value; });
+				}
+			}
 		}
-		if (j != Order - 1)
+
+		return *this;
+	}
+
+	template<typename TValue>
+	constexpr TValue Matrix<TValue>::determinant() const
+	{
+		assert(_sizes[0] == _sizes[1]);
+
+		static constexpr TValue _zero = 0;
+		static constexpr TValue _one = 1;
+
+		TValue det = _one;
+
+		const uint64_t size = _sizes[0];
+		Matrix<ValueType> copy(*this);
+
+		TValue* it = nullptr;
+		TValue* otherIt = nullptr;
+		const TValue* itEnd = nullptr;
+		const TValue* otherItEnd = nullptr;
+
+		it = copy._values;
+		itEnd = it + size;
+		for (uint64_t j = 0; j < size; ++j, it += size + 1, itEnd += size)
 		{
-			std::copy(tensorShape + j + 1, tensorShape + Order, shape + j - 1);
+			const TValue pivot = *it;
+
+			if (pivot == _zero)
+			{
+				otherIt = it + size;
+				otherItEnd = itEnd + size;
+				for (uint64_t i = j + 1; i < size; ++i, otherIt += size, otherItEnd += size)
+				{
+					const TValue value = *otherIt;
+					if (value != _zero)
+					{
+						std::transform<const TValue*>(it, itEnd, otherIt, it, [&](const TValue& x, const TValue& y) { return x + y / value; });
+						break;
+					}
+				}
+
+				if (*it == _zero)
+				{
+					return _zero;
+				}
+			}
+			else if (pivot != _one)
+			{
+				det /= pivot;
+				std::transform<const TValue*>(it, itEnd, it, [&](const TValue& x) { return x / pivot; });
+			}
+
+			otherIt = it + size;
+			otherItEnd = itEnd + size;
+			for (uint64_t i = j + 1; i < size; ++i, otherIt += size, otherItEnd += size)
+			{
+				const TValue value = *otherIt;
+				if (value != _zero)
+				{
+					std::transform<const TValue*>(otherIt, otherItEnd, it, otherIt, [&](const TValue& x, const TValue& y) { return x - y * value; });
+				}
+			}
 		}
 
-		Tensor<TValue, Order - 2> contraction(shape);
-		tensor.tensorContraction(i, j, contraction);
+		it = copy._values;
+		itEnd = it + _length + size;
+		for (; it != itEnd; it += size + 1)
+		{
+			det *= *it;
+		}
 
-		return contraction;
+		return det;
 	}
 
-	template<typename TValue, uint64_t OrderA, uint64_t OrderB>
-	Tensor<TValue, OrderA + OrderB> tensorProduct(const Tensor<TValue, OrderA>& a, const Tensor<TValue, OrderB>& b)
-	{
-		const uint64_t* shapeA = a.getShape();
-		const uint64_t* shapeB = b.getShape();
 
-		uint64_t shape[OrderA + OrderB];
-		std::copy(shapeA, shapeA + OrderA, shape);
-		std::copy(shapeB, shapeB + OrderB, shape + OrderA);
-
-		Tensor<TValue, OrderA + OrderB> c(shape);
-		a.tensorProduct(b, c);
-
-		return c;
-	}
-
-	template<typename TValue, uint64_t OrderA, uint64_t OrderB>
-	Tensor<TValue, OrderA + OrderB - 2> contractedTensorProduct(const Tensor<TValue, OrderA>& a, const Tensor<TValue, OrderB>& b)
-	{
-		static_assert(OrderA + OrderB > 2);
-		assert(a.getSize(OrderA - 1) == b.getSize(0));
-
-		const uint64_t* shapeA = a.getShape();
-		const uint64_t* shapeB = b.getShape();
-
-		uint64_t shape[OrderA + OrderB - 2];
-		std::copy(shapeA, shapeA + OrderA - 1, shape);
-		std::copy(shapeB, shapeB + OrderB - 1, shape + OrderA - 1);
-
-		Tensor<TValue, OrderA + OrderB - 2> c(shape);
-		a.contractedTensorProduct(b, c);
-
-		return c;
-	}
-
+	SCP_VECTOR_DEF(template<typename TValue>, Vector, Vector<TValue>)
 
 	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(uint64_t row, uint64_t col) : DenseMatrix<Tensor<TValue, 2>>(std::vector<uint64_t>{ { row, col } })
+	constexpr Vector<TValue>* Vector<TValue>::createAroundMemory(uint64_t size, TValue* memory)
 	{
+		assert(size != 0);
+		assert(memory);
+
+		Vector<TValue>* vector = new Vector<TValue>();
+
+		vector->_order = 2;
+
+		vector->_length = size;
+
+		vector->_sizes = new uint64_t[1];
+		vector->_sizes[0] = size;
+
+		vector->_values = memory;
+
+		vector->_owner = false;
+
+		return vector;
 	}
 
 	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(uint64_t row, uint64_t col, const TValue& value) : DenseMatrix<Tensor<TValue, 2>>(std::vector<uint64_t>{ { row, col } }, value)
+	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	constexpr void Vector<TValue>::rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const
 	{
+		assert(vector.getOrder() == 1);
+		assert(matrix.getOrder() == 2);
+		assert(matrix.getSize(0) == vector.getSize(0));
+		assert(matrix.getSize(1) == _length);
+
+		std::fill_n(_values, _length, 0);
+
+		const uint64_t n = matrix.getElementCount();
+
+		uint64_t j = 0;
+		const TValue* x = &vector.get(j);
+
+		TValue* it = _values;
+		const TValue* const itEnd = it + _length;
+		for (uint64_t i = 0; i < n; ++i, ++it)
+		{
+			if (it == itEnd)
+			{
+				it = _values;
+				x = &vector.get(++j);
+			}
+
+			*it += *x * matrix.get(i);
+		}
 	}
 
 	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(uint64_t row, uint64_t col, const TValue* values) : DenseMatrix<Tensor<TValue, 2>>(std::vector<uint64_t>{ { row, col } }, values)
+	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	constexpr void Vector<TValue>::leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const
 	{
+		assert(vector.getOrder() == 1);
+		assert(matrix.getOrder() == 2);
+		assert(matrix.getSize(0) == _length);
+		assert(matrix.getSize(1) == vector.getSize(0));
+
+		const uint64_t m = vector.getSize(0);
+		const uint64_t n = matrix.getElementCount();
+
+		uint64_t j = 0;
+		TValue* it = _values;
+		*it = 0;
+		for (uint64_t i = 0, j = 0; i < n; ++i, ++j)
+		{
+			if (j == m)
+			{
+				j = 0;
+				++it;
+				*it = 0;
+			}
+
+			*it += matrix.get(i) * vector.get(j);
+		}
 	}
 
 	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(uint64_t row, uint64_t col, const std::vector<TValue>& values) : DenseMatrix<Tensor<TValue, 2>>(std::vector<uint64_t>{ { row, col } }, values)
+	template<TensorConcept<TValue> TTensor>
+	constexpr Vector<TValue>& Vector<TValue>::crossProduct(const TTensor& vector)
 	{
-	}
-
-	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(uint64_t row, uint64_t col, const std::initializer_list<TValue>& values) : DenseMatrix<Tensor<TValue, 2>>(std::vector<uint64_t>{ { row, col } }, values)
-	{
-	}
-
-	template<typename TValue>
-	constexpr Matrix<TValue>::Matrix(const TensorBase<TValue>& tensor) : DenseMatrix<Tensor<TValue, 2>>(tensor)
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>& Matrix<TValue>::operator[](uint64_t i)
-	{
-		return static_cast<Vector<TValue>&>(Tensor<TValue, 2>::operator[](i));
-	}
-
-	template<typename TValue>
-	constexpr const Vector<TValue>& Matrix<TValue>::operator[](uint64_t i) const
-	{
-		return static_cast<const Vector<TValue>&>(Tensor<TValue, 2>::operator[](i));
-	}
-
-
-	template<typename TValue>
-	Matrix<TValue> operator*(const Matrix<TValue>& a, const Matrix<TValue>& b)
-	{
-		Matrix<TValue> result(a.getSize(0), b.getSize(1));
-		a.matrixProduct(b, result);
-		return result;
-	}
-
-	template<typename TValue>
-	Vector<TValue> operator*(const Matrix<TValue>& matrix, const Vector<TValue>& vector)
-	{
-		Vector<TValue> result(matrix.getSize(0));
-		matrix.vectorProduct(vector, result);
-		return result;
-	}
-
-	template<typename TValue>
-	Matrix<TValue> transpose(const Matrix<TValue>& matrix)
-	{
-		Matrix<TValue> result(matrix.getSize(1), matrix.getSize(0));
-		matrix.transpose(result);
-		return result;
-	}
-
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(uint64_t size) : DenseVector<Tensor<TValue, 1>>(&size)
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(uint64_t size, const TValue& value) : DenseVector<Tensor<TValue, 1>>(&size, value)
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(uint64_t size, const TValue* values) : DenseVector<Tensor<TValue, 1>>(&size, values)
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(const std::vector<TValue>& values) : DenseVector<Tensor<TValue, 1>>(std::vector<uint64_t>{ { values.size() } }, values.data())
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(const std::initializer_list<TValue>& values) : DenseVector<Tensor<TValue, 1>>(std::vector<uint64_t>{ { values.size() } }, values.begin())
-	{
-	}
-
-	template<typename TValue>
-	constexpr Vector<TValue>::Vector(const TensorBase<TValue>& tensor) : DenseVector<Tensor<TValue, 1>>(tensor)
-	{
-	}
-
-	
-	template<typename TValue>
-	Vector<TValue> operator*(const Vector<TValue>& vector, const Matrix<TValue>& matrix)
-	{
-		Vector<TValue> result(matrix.getSize(1));
-		vector.matrixProduct(matrix, result);
-		return result;
+		assert(_length == 3);
+		assert(vector.getOrder() == 1);
+		assert(vector.getSize(0) == 3);
+		
+		const TValue xA = _values[0];
+		const TValue yA = _values[1];
+		const TValue zA = _values[2];
+		
+		const TValue& xB = vector.get(0ULL);
+		const TValue& yB = vector.get(1ULL);
+		const TValue& zB = vector.get(2ULL);
+		
+		_values[0] = yA * zB - zA * yB;
+		_values[1] = zA * xB - xA * zB;
+		_values[2] = xA * yB - yA * xB;
+		
+		return *this;
 	}
 }

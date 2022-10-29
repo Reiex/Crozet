@@ -1,11 +1,11 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #include <SciPP/Core/Frac.hpp>
 
@@ -37,7 +37,7 @@ namespace scp
 		_q(q)
 	{
 		assert(q != _zero);
-		simplify();
+		_simplify();
 	}
 
 	template<typename TValue>
@@ -49,7 +49,7 @@ namespace scp
 		_p = p;
 		_q = q;
 
-		simplify();
+		_simplify();
 
 		return *this;
 	}
@@ -63,7 +63,7 @@ namespace scp
 		_p = p;
 		_q = q;
 
-		simplify();
+		_simplify();
 
 		return *this;
 	}
@@ -74,7 +74,7 @@ namespace scp
 		_p *= x._p;
 		_q *= x._q;
 
-		simplify();
+		_simplify();
 
 		return *this;
 	}
@@ -88,7 +88,7 @@ namespace scp
 		_p = p;
 		_q = q;
 
-		simplify();
+		_simplify();
 
 		return *this;
 	}
@@ -97,7 +97,7 @@ namespace scp
 	constexpr Frac<TValue>& Frac<TValue>::operator+=(const TValue& x)
 	{
 		_p += x * _q;
-		simplify();
+		_simplify();
 		return *this;
 	}
 
@@ -105,7 +105,7 @@ namespace scp
 	constexpr Frac<TValue>& Frac<TValue>::operator-=(const TValue& x)
 	{
 		_p -= x * _q;
-		simplify();
+		_simplify();
 		return *this;
 	}
 
@@ -113,7 +113,7 @@ namespace scp
 	constexpr Frac<TValue>& Frac<TValue>::operator*=(const TValue& x)
 	{
 		_p *= x;
-		simplify();
+		_simplify();
 		return *this;
 	}
 
@@ -121,7 +121,7 @@ namespace scp
 	constexpr Frac<TValue>& Frac<TValue>::operator/=(const TValue& x)
 	{
 		_q *= x;
-		simplify();
+		_simplify();
 		return *this;
 	}
 
@@ -201,7 +201,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr void Frac<TValue>::simplify()
+	constexpr void Frac<TValue>::_simplify()
 	{
 		if (_q < 0)
 		{

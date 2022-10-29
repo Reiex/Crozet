@@ -1,11 +1,11 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #include <SciPP/Core/Quat.hpp>
 
@@ -140,15 +140,17 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr void Quat<TValue>::setFromRotationAxisAngle(const TensorBase<TValue>& axis, const TValue& angle)
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Quat<TValue>::setFromRotationAxisAngle(const TTensor& axis, const TValue& angle)
 	{
 		assert(axis.getOrder() == 1);
 		assert(axis.getSize(0) == 3);
-		setFromAxisAngle({ axis.get({ 0 }), axis.get({ 1 }), axis.get({ 2 }) }, angle);
+		setFromAxisAngle({ axis.get(0ULL), axis.get(1ULL), axis.get(2ULL) }, angle);
 	}
 
 	template<typename TValue>
-	constexpr void Quat<TValue>::getRotationAxisAngle(TensorBase<TValue>& axis, TValue& angle)
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Quat<TValue>::getRotationAxisAngle(TTensor& axis, TValue& angle)
 	{
 		assert(axis.getOrder() == 1);
 		assert(axis.getSize(0) == 3);
@@ -157,9 +159,9 @@ namespace scp
 		angle = std::acos(w) * 2;
 
 		const TValue factor = std::sin(angle / 2);
-		axis.set({ 0 }, x / factor);
-		axis.set({ 1 }, y / factor);
-		axis.set({ 2 }, z / factor);
+		axis.set(0ULL, x / factor);
+		axis.set(1ULL, y / factor);
+		axis.set(2ULL, z / factor);
 	}
 
 	template<typename TValue>
@@ -215,22 +217,24 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr void Quat<TValue>::setFromRotationMatrix(const TensorBase<TValue>& matrix)
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Quat<TValue>::setFromRotationMatrix(const TTensor& matrix)
 	{
 		assert(matrix.getOrder() == 2);
 		assert(matrix.getSize(0) == 3);
 		assert(matrix.getSize(1) == 3);
 		setFromMatrix(
 			{
-				matrix.get({ 0, 0 }), matrix.get({ 0, 1 }), matrix.get({ 0, 2 }),
-				matrix.get({ 1, 0 }), matrix.get({ 1, 1 }), matrix.get({ 1, 2 }),
-				matrix.get({ 2, 0 }), matrix.get({ 2, 1 }), matrix.get({ 2, 2 })
+				matrix.get(0ULL), matrix.get(1ULL), matrix.get(2ULL),
+				matrix.get(3ULL), matrix.get(4ULL), matrix.get(5ULL),
+				matrix.get(6ULL), matrix.get(7ULL), matrix.get(8ULL)
 			}
 		);
 	}
 
 	template<typename TValue>
-	constexpr void Quat<TValue>::getRotationMatrix(TensorBase<TValue>& matrix) const
+	template<TensorConcept<TValue> TTensor>
+	constexpr void Quat<TValue>::getRotationMatrix(TTensor& matrix) const
 	{
 		assert(matrix.getOrder() == 2);
 		assert(matrix.getSize(0) == 3);
@@ -249,15 +253,15 @@ namespace scp
 		const TValue xz2 = 2 * x * z;
 		const TValue yz2 = 2 * y * z;
 
-		matrix.set({ 0, 0 }, ww + xx - yy - zz);
-		matrix.set({ 0, 1 }, xy2 - wz2);
-		matrix.set({ 0, 2 }, wy2 + xz2);
-		matrix.set({ 1, 0 }, wz2 + xy2);
-		matrix.set({ 1, 1 }, ww - xx + yy - zz);
-		matrix.set({ 1, 2 }, yz2 - wx2);
-		matrix.set({ 2, 0 }, xz2 - wy2);
-		matrix.set({ 2, 1 }, wx2 + yz2);
-		matrix.set({ 2, 2 }, ww - xx - yy + zz);
+		matrix.set(0ULL, ww + xx - yy - zz);
+		matrix.set(1ULL, xy2 - wz2);
+		matrix.set(2ULL, wy2 + xz2);
+		matrix.set(3ULL, wz2 + xy2);
+		matrix.set(4ULL, ww - xx + yy - zz);
+		matrix.set(5ULL, yz2 - wx2);
+		matrix.set(6ULL, xz2 - wy2);
+		matrix.set(7ULL, wx2 + yz2);
+		matrix.set(8ULL, ww - xx - yy + zz);
 	}
 
 	template<typename TValue>

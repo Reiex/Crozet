@@ -57,43 +57,59 @@ namespace crz
 			++realTimeTo;
 		}
 
-		// Retrieve sound-base samples
+		// TODO: Comment this
 
-		scp::Vector<int32_t> sampleVector(timeTo - timeFrom);
-		scp::Vector<int32_t> rawSampleVector(realTimeTo - realTimeFrom);
+		int32_t* rawSamples = new int32_t[(realTimeTo - realTimeFrom) * std::max(channelCount, realChannelCount)];
+		getRawSamples(rawSamples, realTimeFrom, realTimeTo);
 
-		std::vector<int32_t> buffer((realTimeTo - realTimeFrom) * realChannelCount);
-		getRawSamples(buffer.data(), realTimeFrom, realTimeTo);
-
-		// Convert them to output-frequency samples
-
-		const uint16_t commonChannelCount = std::min(realChannelCount, channelCount);
-		for (uint16_t i = 0; i < commonChannelCount; ++i)
+		if (channelCount > realChannelCount)
 		{
-			int32_t* it = buffer.data() + i;
-			for (uint64_t j = 0; j < rawSampleVector.getSize(0); ++j, it += realChannelCount)
+			const uint16_t srcDecrement = 2 * realChannelCount;
+			const uint16_t dstDecrement = 2 * channelCount;
+
+
+			int32_t* itDst = rawSamples + (realTimeTo - realTimeFrom - 1) * channelCount;
+			const int32_t* itSrc = rawSamples + (realTimeTo - realTimeFrom - 1) * realChannelCount;
+			const int32_t* const itEnd = rawSamples - realChannelCount;
+
+			for (; itSrc != itEnd; itSrc -= srcDecrement, itDst -= dstDecrement)
 			{
-				rawSampleVector[j] = *it;
+				uint16_t i = 0;
+				for (; i < realChannelCount; ++i, ++itSrc, ++itDst)
+				{
+					*itDst = *itSrc;
+				}
+
+				for (; i < channelCount; ++i, ++itDst)
+				{
+					*itDst = *(itDst - realChannelCount);
+				}
 			}
+		}
+		else if (realChannelCount > channelCount)
+		{
+			const uint16_t srcIncrement = realChannelCount - channelCount;
 
-			rawSampleVector.interpolation(sampleVector, scp::InterpolationMethod::Cubic);
+			int32_t* itDst = rawSamples + channelCount;
+			const int32_t* itSrc = rawSamples + realChannelCount;
+			const int32_t* const itEnd = rawSamples + (realTimeTo - realTimeFrom) * realChannelCount;
 
-			it = samples + i;
-			for (uint64_t j = 0; j < sampleVector.getSize(0); ++j, it += channelCount)
+			for (; itSrc != itEnd; itSrc += srcIncrement)
 			{
-				*it = sampleVector[j];
+				for (uint16_t i = 0; i < channelCount; ++i, ++itSrc, ++itDst)
+				{
+					*itDst = *itSrc;
+				}
 			}
 		}
 
-		// Then to output-channelCount samples
+		scp::Matrix<int32_t>* samplesMatrix = scp::Matrix<int32_t>::createAroundMemory(timeTo - timeFrom, channelCount, samples);
+		scp::Matrix<int32_t>* rawSamplesMatrix = scp::Matrix<int32_t>::createAroundMemory(realTimeTo - realTimeFrom, channelCount, rawSamples);
 
-		for (uint16_t i = realChannelCount; i < channelCount; ++i)
-		{
-			int32_t* it = samples + i;
-			for (uint64_t j = 0; j < sampleVector.getSize(0); ++j, it += channelCount)
-			{
-				*it = *(it - realChannelCount);
-			}
-		}
+		samplesMatrix->interpolation<float, scp::InterpolationMethod::Linear>(*rawSamplesMatrix);
+
+		delete samplesMatrix;
+		delete rawSamplesMatrix;
+		delete[] rawSamples;
 	}
 }

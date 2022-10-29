@@ -25,6 +25,12 @@ namespace dsk
 			DeflateInvalidCodeLengths,
 			DeflateInvalidCode,
 
+			// Obj
+
+			ObjInvalidEndLine,
+			ObjInvalidNumber,
+			ObjInvalidLine,
+
 			// Png
 
 			PngInvalidSignature,
@@ -32,6 +38,12 @@ namespace dsk
 			PngInvalidChunkSize,
 			PngInvalidChunkContent,
 			PngInvalidChunkCRC,
+
+			// Pnm
+
+			PnmInvalidMagicNumber,
+			PnmInvalidNumber,
+			PnmMissingSpace,
 
 			// Riff
 

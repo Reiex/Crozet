@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,14 +5,347 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
-#include <SciPP/Core/Tensor/TensorShaped.hpp>
-#include <SciPP/Core/Tensor/TensorIterator.hpp>
-#include <SciPP/Core/Tensor/TensorSweep.hpp>
+#include <SciPP/Core/Tensor/TensorShape.hpp>
+
+#pragma region scpTensorMacros
+
+#define SCP_TENSOR_DECL(TensorName, This)																				\
+																														\
+public:																													\
+																														\
+	using ValueType = TValue;																							\
+																														\
+	constexpr TensorName(uint64_t order, const uint64_t* sizes);														\
+	constexpr TensorName(uint64_t order, const uint64_t* sizes, const TValue& value);									\
+	constexpr TensorName(uint64_t order, const uint64_t* sizes, const TValue* values);									\
+	constexpr TensorName(uint64_t order, const uint64_t* sizes, const std::initializer_list<TValue>& values);			\
+	constexpr TensorName(const std::initializer_list<uint64_t>& sizes);													\
+	constexpr TensorName(const std::initializer_list<uint64_t>& sizes, const TValue& value);							\
+	constexpr TensorName(const std::initializer_list<uint64_t>& sizes, const TValue* values);							\
+	constexpr TensorName(const std::initializer_list<uint64_t>& sizes, const std::initializer_list<TValue>& values);	\
+	constexpr TensorName(const This& tensor);																			\
+	constexpr TensorName(This&& tensor);																				\
+	template<TensorConcept<TValue> TTensor> constexpr TensorName(const TTensor& tensor);								\
+	template<TensorConcept<TValue> TTensor> constexpr TensorName(TTensor&& tensor);										\
+																														\
+	constexpr This& operator=(const This& tensor);																		\
+	constexpr This& operator=(This&& tensor);																			\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);							\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
+
+
+#define SCP_TENSOR_DEF(TemplateDecl, TensorName, This)																													\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(uint64_t order, const uint64_t* sizes) : This()																								\
+{																																										\
+	assert(order != 0);																																					\
+	for (uint64_t i = 0; i < order; ++i)																																\
+	{																																									\
+		assert(sizes[i] != 0);																																			\
+	}																																									\
+																																										\
+	_create(order, sizes);																																				\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(uint64_t order, const uint64_t* sizes, const TValue& value) : This(order, sizes)																\
+{																																										\
+	fill(value);																																						\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(uint64_t order, const uint64_t* sizes, const TValue* values) : This(order, sizes)															\
+{																																										\
+	copy(values);																																						\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(uint64_t order, const uint64_t* sizes, const std::initializer_list<TValue>& values) : This(order, sizes, values.begin())						\
+{																																										\
+	assert(values.size() == getElementCount());																															\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(const std::initializer_list<uint64_t>& sizes) : This(sizes.size(), sizes.begin())															\
+{																																										\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(const std::initializer_list<uint64_t>& sizes, const TValue& value) : This(sizes.size(), sizes.begin(), value)								\
+{																																										\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(const std::initializer_list<uint64_t>& sizes, const TValue* values) : This(sizes.size(), sizes.begin(), values)								\
+{																																										\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(const std::initializer_list<uint64_t>& sizes, const std::initializer_list<TValue>& values) : This(sizes.size(), sizes.begin(), values)		\
+{																																										\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(const This& tensor) : This()																													\
+{																																										\
+	_copyFrom(tensor);																																					\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This::TensorName(This&& tensor) : This()																														\
+{																																										\
+	_moveFrom(std::forward<This>(tensor));																																\
+}																																										\
+																																										\
+TemplateDecl																																							\
+template<TensorConcept<TValue> TTensor>																																	\
+constexpr This::TensorName(const TTensor& tensor) : This()																												\
+{																																										\
+	_copyFrom(tensor);																																					\
+}																																										\
+																																										\
+TemplateDecl																																							\
+template<TensorConcept<TValue> TTensor>																																	\
+constexpr This::TensorName(TTensor&& tensor) : This()																													\
+{																																										\
+	_moveFrom(std::forward<TTensor>(tensor));																															\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This& This::operator=(const This& tensor)																														\
+{																																										\
+	_copyFrom(tensor);																																					\
+	return *this;																																						\
+}																																										\
+																																										\
+TemplateDecl																																							\
+constexpr This& This::operator=(This&& tensor)																															\
+{																																										\
+	_moveFrom(std::forward<This>(tensor));																																\
+	return *this;																																						\
+}																																										\
+																																										\
+TemplateDecl																																							\
+template<TensorConcept<TValue> TTensor>																																	\
+constexpr This& This::operator=(const TTensor& tensor)																													\
+{																																										\
+	_copyFrom(tensor);																																					\
+	return *this;																																						\
+}																																										\
+																																										\
+TemplateDecl																																							\
+template<TensorConcept<TValue> TTensor>																																	\
+constexpr This& This::operator=(TTensor&& tensor)																														\
+{																																										\
+	_moveFrom(std::forward<TTensor>(tensor));																															\
+	return *this;																																						\
+}
+
+
+#define SCP_MATRIX_DECL(MatrixName, This, TensorSuper)												\
+																									\
+public:																								\
+																									\
+	using IsMatrix = bool;																			\
+	using Super = TensorSuper;																		\
+	using ValueType = TValue;																		\
+																									\
+	constexpr MatrixName(uint64_t row, uint64_t col);												\
+	constexpr MatrixName(uint64_t row, uint64_t col, const TValue& value);							\
+	constexpr MatrixName(uint64_t row, uint64_t col, const TValue* values);							\
+	constexpr MatrixName(uint64_t row, uint64_t col, const std::initializer_list<TValue>& values);	\
+	constexpr MatrixName(const This& matrix);														\
+	constexpr MatrixName(This&& matrix);															\
+	template<TensorConcept<TValue> TTensor> constexpr MatrixName(const TTensor& tensor);			\
+	template<TensorConcept<TValue> TTensor> constexpr MatrixName(TTensor&& tensor);					\
+																									\
+	constexpr This& operator=(const This& matrix);													\
+	constexpr This& operator=(This&& matrix);														\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);		\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
+
+
+#define SCP_MATRIX_DEF(TemplateDecl, MatrixName, This)																				\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(uint64_t row, uint64_t col) : Super({ row, col })														\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(uint64_t row, uint64_t col, const TValue& value) : Super({ row, col }, value)							\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(uint64_t row, uint64_t col, const TValue* values) : Super({ row, col }, values)							\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(uint64_t row, uint64_t col, const std::initializer_list<TValue>& values) : Super({ row, col }, values)	\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(const This& matrix) : Super(matrix)																		\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::MatrixName(This&& matrix) : Super(std::forward<This>(matrix))														\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This::MatrixName(const TTensor& tensor) : Super(tensor)																	\
+{																																	\
+	assert(tensor.getOrder() == 2);																									\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This::MatrixName(TTensor&& tensor) : Super(std::forward<TTensor>(tensor))													\
+{																																	\
+	assert(tensor.getOrder() == 2);																									\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This& This::operator=(const This& matrix)																					\
+{																																	\
+	return dynamic_cast<This&>(Super::operator=(matrix));																			\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This& This::operator=(This&& matrix)																						\
+{																																	\
+	return dynamic_cast<This&>(Super::operator=(std::forward<This>(matrix)));														\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This& This::operator=(const TTensor& tensor)																				\
+{																																	\
+	assert(tensor.getOrder() == 2);																									\
+	return dynamic_cast<This&>(Super::operator=(tensor));																			\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This& This::operator=(TTensor&& tensor)																					\
+{																																	\
+	assert(tensor.getOrder() == 2);																									\
+	return dynamic_cast<This&>(Super::operator=(std::forward<TTensor>(tensor)));													\
+}
+
+
+#define SCP_VECTOR_DECL(VectorName, This, TensorSuper)												\
+																									\
+public:																								\
+																									\
+	using IsVector = bool;																			\
+	using Super = TensorSuper;																		\
+	using ValueType = TValue;																		\
+																									\
+	constexpr VectorName(uint64_t size);															\
+	constexpr VectorName(uint64_t size, const TValue& value);										\
+	constexpr VectorName(uint64_t size, const TValue* values);										\
+	constexpr VectorName(const std::initializer_list<TValue>& values);								\
+	constexpr VectorName(const This& vector);														\
+	constexpr VectorName(This&& vector);															\
+	template<TensorConcept<TValue> TTensor> constexpr VectorName(const TTensor& tensor);			\
+	template<TensorConcept<TValue> TTensor> constexpr VectorName(TTensor&& tensor);					\
+																									\
+	constexpr This& operator=(const This& vector);													\
+	constexpr This& operator=(This&& vector);														\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);		\
+	template<TensorConcept<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
+
+
+#define SCP_VECTOR_DEF(TemplateDecl, VectorName, This)																				\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(uint64_t size) : Super(1, &size)																			\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(uint64_t size, const TValue& value) : Super(1, &size, value)												\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(uint64_t size, const TValue* values) : Super(1, &size, values)											\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(const std::initializer_list<TValue>& values) : Super({ values.size() }, values.begin())					\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(const This& vector) : Super(vector)																		\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This::VectorName(This&& vector) : Super(std::forward<This>(vector))														\
+{																																	\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This::VectorName(const TTensor& tensor) : Super(tensor)																	\
+{																																	\
+	assert(tensor.getOrder() == 1);																									\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This::VectorName(TTensor&& tensor) : Super(std::forward<TTensor>(tensor))													\
+{																																	\
+	assert(tensor.getOrder() == 1);																									\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This& This::operator=(const This& vector)																					\
+{																																	\
+	return dynamic_cast<This&>(Super::operator=(vector));																			\
+}																																	\
+																																	\
+TemplateDecl																														\
+constexpr This& This::operator=(This&& vector)																						\
+{																																	\
+	return dynamic_cast<This&>(Super::operator=(std::forward<This>(vector)));														\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This& This::operator=(const TTensor& tensor)																				\
+{																																	\
+	assert(tensor.getOrder() == 1);																									\
+	return dynamic_cast<This&>(Super::operator=(tensor));																			\
+}																																	\
+																																	\
+TemplateDecl																														\
+template<TensorConcept<TValue> TTensor>																								\
+constexpr This& This::operator=(TTensor&& tensor)																					\
+{																																	\
+	assert(tensor.getOrder() == 1);																									\
+	return dynamic_cast<This&>(Super::operator=(std::forward<TTensor>(tensor)));													\
+}
+
+#pragma endregion
 
 namespace scp
 {
-	enum class ConvolutionMethod
+	enum class BorderBehaviour
 	{
 		Zero,
 		Continuous,
@@ -28,134 +359,102 @@ namespace scp
 		Cubic
 	};
 
+	struct TensorPosition
+	{
+		uint64_t* indices;
+		uint64_t index;
+	};
 
-	template<typename TValue>
-	class TensorBase : public TensorShaped
+	class TensorShapeIterator
 	{
 		public:
 
-			using ValueType = TValue;
+			constexpr TensorShapeIterator() = delete;
+			constexpr TensorShapeIterator(const TensorShape* shape, bool end);
+			constexpr TensorShapeIterator(const TensorShapeIterator& iterator);
+			constexpr TensorShapeIterator(TensorShapeIterator&& iterator);
 
-			TensorBase(const TensorBase<TValue>& tensor) = delete;
-			TensorBase(TensorBase<TValue>&& tensor) = delete;
+			constexpr TensorShapeIterator& operator=(const TensorShapeIterator& iterator);
+			constexpr TensorShapeIterator& operator=(TensorShapeIterator&& iterator);
 
-			TensorBase<TValue>& operator=(const TensorBase<TValue>& tensor) = delete;
-			TensorBase<TValue>& operator=(TensorBase<TValue>&& tensor) = delete;
+			constexpr const TensorPosition& operator*() const;
+			constexpr const TensorPosition* operator->() const;
 
-			constexpr virtual TensorBase<TValue>* clone() const = 0;
+			constexpr TensorShapeIterator& operator++();
 
-			constexpr virtual TensorBase<TValue>& operator+=(const TensorBase<TValue>& tensor);
-			constexpr virtual TensorBase<TValue>& operator-=(const TensorBase<TValue>& tensor);
-			constexpr virtual TensorBase<TValue>& operator*=(const TValue& value);
-			constexpr virtual TensorBase<TValue>& operator/=(const TValue& value);
+			constexpr bool operator==(const TensorShapeIterator& iterator) const;
+			constexpr bool operator!=(const TensorShapeIterator& iterator) const;
 
-			constexpr virtual bool operator==(const TensorBase<TValue>& tensor) const;
-			constexpr bool operator!=(const TensorBase<TValue>& tensor) const;
+			constexpr ~TensorShapeIterator();
 
-			constexpr virtual TensorBase<TValue>& hadamardProduct(const TensorBase<TValue>& tensor);
-			constexpr virtual TensorBase<TValue>& convolution(const TensorBase<TValue>& kernel, ConvolutionMethod method);
-			constexpr virtual TensorBase<TValue>& fft();
-			constexpr virtual TensorBase<TValue>& ifft();
-			constexpr virtual TensorBase<TValue>& negate();
-			constexpr virtual TValue dotProduct(const TensorBase<TValue>& tensor) const;
-			constexpr virtual void tensorContraction(uint64_t i, uint64_t j, TensorBase<TValue>& result) const;
-			constexpr virtual void tensorProduct(const TensorBase<TValue>& tensor, TensorBase<TValue>& result) const;
-			constexpr virtual void contractedTensorProduct(const TensorBase<TValue>& tensor, TensorBase<TValue>& result) const;
-			constexpr virtual void interpolation(TensorBase<TValue>& result, InterpolationMethod method) const;
-
-			constexpr virtual TensorBase<TValue>& fill(const TValue& value);
-			constexpr virtual TensorBase<TValue>& apply(const std::function<TValue(const TValue&)>& function);
-
-			constexpr virtual TValue normSq() const;
-			constexpr virtual TValue norm() const final;
-			constexpr virtual const TValue& minElement() const;
-			constexpr virtual const TValue& maxElement() const;
-
-			constexpr virtual const TValue& get(uint64_t internalIndex) const = 0;
-			constexpr virtual const TValue& get(const uint64_t* indices) const = 0;
-			constexpr virtual const TValue& get(const std::initializer_list<uint64_t>& indices) const = 0;
-			constexpr virtual void set(uint64_t internalIndex, const TValue& value) = 0;
-			constexpr virtual void set(const uint64_t* indices, const TValue& value) = 0;
-			constexpr virtual void set(const std::initializer_list<uint64_t>& indices, const TValue& value) = 0;
-
-			constexpr virtual void getIndices(uint64_t internalIndex, uint64_t* indices) const override = 0;
-			constexpr virtual uint64_t getInternalIndex(const uint64_t* indices) const override = 0;
-			constexpr virtual uint64_t getInternalLength() const override = 0;
-
-			constexpr virtual uint64_t getOrder() const override = 0;
-			constexpr virtual const uint64_t* getShape() const override = 0;
-			constexpr virtual uint64_t getSize(uint64_t i) const override = 0;
-
-			constexpr virtual ~TensorBase() = default;
-		
 		protected:
 
-			static const TValue _zero;
-
-			constexpr TensorBase() = default;
-
-			constexpr virtual void setInitialPosition(TensorIteratorBase * iterator, bool end) const override = 0;
-			constexpr virtual void incrementPosition(TensorIteratorBase * iterator) const override = 0;
-
-			constexpr virtual void create(uint64_t order, const uint64_t* shape) = 0;
-			constexpr virtual void copyFrom(const TensorBase<TValue>& tensor);
-			constexpr virtual void moveFrom(TensorBase<TValue>&& tensor);
-			constexpr virtual void destroy() = 0;
+			const TensorShape* _shape;
+			TensorPosition _pos;
 	};
 
-	template<TensorConcept TTensor>
+	struct TensorShape
+	{
+		uint64_t order;
+		const uint64_t* sizes;
+
+		constexpr uint64_t getIndex(const uint64_t* indices) const;
+		constexpr void getIndices(uint64_t index, uint64_t* indices) const;
+		constexpr uint64_t getElementCount() const;
+
+		constexpr TensorShapeIterator begin() const;
+		constexpr TensorShapeIterator end() const;
+	};
+
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator+(const TTensor& a, const TTensor& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator+(TTensor&& a, const TTensor& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator+(const TTensor& a, TTensor&& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator+(TTensor&& a, TTensor&& b);
-
-	template<TensorConcept TTensor>
+	
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator-(const TTensor& a, const TTensor& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator-(TTensor&& a, const TTensor& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator-(const TTensor& a, TTensor&& b);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator-(TTensor&& a, TTensor&& b);
-
-	template<TensorConcept TTensor>
+	
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator*(const TTensor& tensor, const typename TTensor::ValueType& value);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator*(TTensor&& tensor, const typename TTensor::ValueType& value);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator*(const typename TTensor::ValueType& value, const TTensor& tensor);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator*(const typename TTensor::ValueType& value, TTensor&& tensor);
-
-	template<TensorConcept TTensor>
+	
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator/(const TTensor& tensor, const typename TTensor::ValueType& value);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator/(TTensor&& tensor, const typename TTensor::ValueType& value);
-
-	template<TensorConcept TTensor>
+	
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator-(const TTensor& a);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator-(TTensor&& a);
-
-	template<TensorConcept TTensor>
+	
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor operator+(const TTensor& a);
-	template<TensorConcept TTensor>
+	template<UntypedTensorConcept TTensor>
 	constexpr TTensor&& operator+(TTensor&& a);
 
+	template<UntypedMatrixConcept TMatrix>
+	TMatrix operator*(const TMatrix& a, const TMatrix& b);
 
-	template<TensorConcept TTensor>
-	constexpr TTensor hadamardProduct(const TTensor& a, const TTensor& b);
-	template<TensorConcept TTensor>
-	constexpr TTensor convolution(const TTensor& tensor, const TensorBase<typename TTensor::ValueType>& kernel, ConvolutionMethod method);
-	template<TensorConcept TTensor>
-	constexpr TTensor fft(const TTensor& tensor);
-	template<TensorConcept TTensor>
-	constexpr TTensor ifft(const TTensor& tensor);
-	template<typename TValue>
-	constexpr typename TValue dotProduct(const TensorBase<TValue>& a, const TensorBase<TValue>& b);
+	template<UntypedVectorConcept TVector, UntypedMatrixConcept TMatrix>
+	TVector operator*(const TVector& vector, const TMatrix& matrix);
+	template<UntypedMatrixConcept TMatrix, UntypedVectorConcept TVector>
+	TVector operator*(const TMatrix& matrix, const TVector& vector);
 }
 
 #include <SciPP/Core/Tensor/templates/TensorBase.hpp>

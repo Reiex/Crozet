@@ -11,8 +11,6 @@ namespace dsk
 		{
 			FMT_BEGIN("WaveIStream::readFile(wave::File<TSample>& file)");
 
-			assert(!_headerRead);
-
 			FMT_CALL(readHeader, _header);
 			file.metadata = _header.metadata;
 			file.samples.resize(_header.blockCount * _header.metadata.channelCount);

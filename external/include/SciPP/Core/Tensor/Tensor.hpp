@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,73 +5,94 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
 #include <SciPP/Core/Tensor/TensorBase.hpp>
-#include <SciPP/Core/Tensor/MatrixBase.hpp>
 
 namespace scp
 {
-	namespace _scp
+	template<typename TValue>
+	class Tensor
 	{
-		template<typename TValue, uint64_t Order> struct TensorTypeEncapsulator { using Type = Tensor<TValue, Order>; };
-		template<typename TValue> struct TensorTypeEncapsulator<TValue, 0> { using Type = TValue; };
-	}
+		SCP_TENSOR_DECL(Tensor, Tensor<TValue>)
 
-	template <typename TValue, uint64_t Order>
-	class Tensor : public DenseTensor<TValue>
-	{
 		public:
 
-			using SubTensor = typename _scp::TensorTypeEncapsulator<TValue, Order - 1>::Type;
+			// Tensors API
 
-			constexpr Tensor(const uint64_t* shape);
-			constexpr Tensor(const uint64_t* shape, const TValue& value);
-			constexpr Tensor(const uint64_t* shape, const TValue* values);
-			constexpr Tensor(const uint64_t* shape, const std::vector<TValue>& values);
-			constexpr Tensor(const uint64_t* shape, const std::initializer_list<TValue>& values);
-			constexpr Tensor(const std::vector<uint64_t>& shape);
-			constexpr Tensor(const std::vector<uint64_t>& shape, const TValue& value);
-			constexpr Tensor(const std::vector<uint64_t>& shape, const TValue* values);
-			constexpr Tensor(const std::vector<uint64_t>& shape, const std::vector<TValue>& values);
-			constexpr Tensor(const std::vector<uint64_t>& shape, const std::initializer_list<TValue>& values);
-			constexpr Tensor(const std::initializer_list<uint64_t>& shape);
-			constexpr Tensor(const std::initializer_list<uint64_t>& shape, const TValue& value);
-			constexpr Tensor(const std::initializer_list<uint64_t>& shape, const TValue* values);
-			constexpr Tensor(const std::initializer_list<uint64_t>& shape, const std::vector<TValue>& values);
-			constexpr Tensor(const std::initializer_list<uint64_t>& shape, const std::initializer_list<TValue>& values);
-			constexpr Tensor(const TensorBase<TValue>& tensor);
-			constexpr Tensor(const Tensor<TValue, Order>& tensor);
-			constexpr Tensor(Tensor<TValue, Order>&& tensor);
+			constexpr Tensor<TValue>& fill(const TValue& value);
+			template<std::input_iterator TInput> constexpr Tensor<TValue>& copy(TInput it);
+			constexpr Tensor<TValue>& transform(const std::function<TValue(const TValue&)>& unaryOp);
+			template<std::input_iterator TInput> constexpr Tensor<TValue>& transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp);
 
-			constexpr Tensor<TValue, Order>& operator=(const Tensor<TValue, Order>& tensor);
-			constexpr Tensor<TValue, Order>& operator=(Tensor<TValue, Order>&& tensor);
+			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& operator+=(const TTensor& tensor);
+			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& operator-=(const TTensor& tensor);
+			template<typename TScalar> constexpr Tensor<TValue>& operator*=(const TScalar& scalar);
+			template<typename TScalar> constexpr Tensor<TValue>& operator/=(const TScalar& scalar);
+			constexpr Tensor<TValue>& negate();
 
-			constexpr virtual Tensor<TValue, Order>* clone() const override final;
+			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void tensorProduct(const TTensorA& tensorA, const TTensorB& tensorB);
+			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& hadamardProduct(const TTensor& tensor);
+			constexpr Tensor<TValue>& fft();
+			constexpr Tensor<TValue>& ifft();
 
-			constexpr SubTensor& operator[](uint64_t i);
-			constexpr const SubTensor& operator[](uint64_t i) const;
+			template<BorderBehaviour BBehaviour, TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& convolution(const TTensor& kernel);
 
-			constexpr virtual Tensor<TValue, Order>& fft() override final;
-			constexpr virtual Tensor<TValue, Order>& ifft() override final;
+			template<typename TScalar, InterpolationMethod IMethod, TensorConcept<TValue> TTensor> constexpr void interpolation(const TTensor& tensor);
+			template<TensorConcept<TValue> TTensor> constexpr void tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j);
 
-			constexpr virtual const TValue& get(uint64_t internalIndex) const override final;
-			constexpr virtual const TValue& get(const uint64_t* indices) const override final;
-			constexpr virtual const TValue& get(const std::initializer_list<uint64_t>& indices) const override final;
-			constexpr virtual void set(uint64_t internalIndex, const TValue& value) override final;
-			constexpr virtual void set(const uint64_t* indices, const TValue& value) override final;
-			constexpr virtual void set(const std::initializer_list<uint64_t>& indices, const TValue& value) override final;
+			template<TensorConcept<TValue> TTensor> constexpr bool operator==(const TTensor& tensor) const;
+			template<TensorConcept<TValue> TTensor> constexpr bool operator!=(const TTensor& tensor) const;
 
-			constexpr virtual void getIndices(uint64_t internalIndex, uint64_t* indices) const override final;
-			constexpr virtual uint64_t getInternalIndex(const uint64_t* indices) const override final;
-			constexpr virtual uint64_t getInternalLength() const override final;
+			template<TensorConcept<TValue> TTensor> constexpr TValue innerProduct(const TTensor& tensor) const;
 
-			constexpr virtual uint64_t getOrder() const override final;
-			constexpr virtual const uint64_t* getShape() const override final;
-			constexpr virtual uint64_t getSize(uint64_t i) const override final;
-			constexpr virtual uint64_t getTotalLength() const override final;
+			constexpr TValue norm() const;
+			constexpr const TValue& minElement(const std::function<bool(const TValue&, const TValue&)>& compare = std::less<TValue>()) const;
+			constexpr const TValue& maxElement(const std::function<bool(const TValue&, const TValue&)>& compare = std::less<TValue>()) const;
+			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const TScalar* scalarIndices) const;
+			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const;
+			template<BorderBehaviour BBehaviour> constexpr const TValue& getOutOfBound(const int64_t* indices) const;
+			template<BorderBehaviour BBehaviour> constexpr const TValue& getOutOfBound(const std::initializer_list<int64_t>& indices) const;
 
-			constexpr virtual TValue* getData() override final;
-			constexpr virtual const TValue* getData() const override final;
+
+			constexpr TValue* begin();
+			constexpr TValue* end();
+			constexpr const TValue* begin() const;
+			constexpr const TValue* end() const;
+			constexpr const TValue* cbegin() const;
+			constexpr const TValue* cend() const;
+
+			constexpr const TValue& get(uint64_t index) const;
+			constexpr const TValue& get(const uint64_t* indices) const;
+			constexpr const TValue& get(const std::initializer_list<uint64_t>& indices) const;
+			constexpr void set(uint64_t index, const TValue& value);
+			constexpr void set(const uint64_t* indices, const TValue& value);
+			constexpr void set(const std::initializer_list<uint64_t>& indices, const TValue& value);
+
+			constexpr uint64_t getOrder() const;
+			constexpr const uint64_t* getSizes() const;
+			constexpr uint64_t getSize(uint64_t i) const;
+			constexpr uint64_t getElementCount() const;
+
+			// Out of API
+
+			static constexpr Tensor<TValue>* createAroundMemory(uint64_t order, const uint64_t* sizes, TValue* memory);
+			static constexpr Tensor<TValue>* createAroundMemory(const std::initializer_list<uint64_t>& sizes, TValue* memory);
+
+
+			constexpr TValue& operator[](uint64_t index);
+			constexpr TValue& operator[](const std::initializer_list<uint64_t>& indices);
+			constexpr const TValue& operator[](uint64_t index) const;
+			constexpr const TValue& operator[](const std::initializer_list<uint64_t>& indices) const;
+
+			constexpr TValue& get(uint64_t index);
+			constexpr TValue& get(const uint64_t* indices);
+			constexpr TValue& get(const std::initializer_list<uint64_t>& indices);
+
+			constexpr TValue* getData();
+			constexpr const TValue* getData() const;
+
 
 			constexpr virtual ~Tensor();
 
@@ -81,101 +100,88 @@ namespace scp
 
 			constexpr Tensor();
 
-			constexpr void initSubTensor(TValue* values, uint64_t* shape, uint64_t length, uint64_t treeLength);
+			constexpr void _create(uint64_t order, const uint64_t* sizes);
+			template<TensorConcept<TValue> TTensor> constexpr void _copyFrom(const TTensor& tensor);
+			template<TensorConcept<TValue> TTensor> constexpr void _moveFrom(TTensor&& tensor);
+			constexpr void _destroy();
 
-			constexpr virtual void create(uint64_t order, const uint64_t* shape) override final;
-			constexpr virtual void copyFrom(const TensorBase<TValue>& tensor) override final;
-			constexpr virtual void moveFrom(TensorBase<TValue>&& tensor) override final;
-			constexpr virtual void destroy() override final;
+			constexpr void _cooleyTukey(const TValue* const* exponentials, const uint64_t* sizes, uint64_t* offset, uint64_t* stride);
 
-			using DenseTensor<TValue>::_zero;
-
-			TValue* _values;
-			SubTensor* _tree;
-			uint64_t* _shape;
-			uint64_t _treeOffset;
+			uint64_t _order;
 			uint64_t _length;
+			uint64_t* _sizes;
+			TValue* _values;
+
 			bool _owner;
-
-		friend class Tensor<TValue, Order + 1>;
 	};
 
-	template<typename TValue, uint64_t Order>
-	constexpr TensorIterator<Order> begin(const Tensor<TValue, Order>& tensor);
-	template<typename TValue, uint64_t Order>
-	constexpr TensorIterator<Order> end(const Tensor<TValue, Order>& tensor);
-
-	template<typename TValue, uint64_t Order>
-	Tensor<TValue, Order - 2> tensorContraction(const Tensor<TValue, Order>& tensor, uint64_t i, uint64_t j);
-	template<typename TValue, uint64_t OrderA, uint64_t OrderB>
-	Tensor<TValue, OrderA + OrderB> tensorProduct(const Tensor<TValue, OrderA>& a, const Tensor<TValue, OrderB>& b);
-	template<typename TValue, uint64_t OrderA, uint64_t OrderB>
-	Tensor<TValue, OrderA + OrderB - 2> contractedTensorProduct(const Tensor<TValue, OrderA>& a, const Tensor<TValue, OrderB>& b);
-
-
 	template<typename TValue>
-	class Matrix : public DenseMatrix<Tensor<TValue, 2>>
+	class Matrix : public Tensor<TValue>
 	{
+		SCP_MATRIX_DECL(Matrix, Matrix<TValue>, Tensor<TValue>)
+	
 		public:
 
-			Matrix() = delete;
-			constexpr Matrix(uint64_t row, uint64_t col);
-			constexpr Matrix(uint64_t row, uint64_t col, const TValue& value);
-			constexpr Matrix(uint64_t row, uint64_t col, const TValue* values);
-			constexpr Matrix(uint64_t row, uint64_t col, const std::vector<TValue>& values);
-			constexpr Matrix(uint64_t row, uint64_t col, const std::initializer_list<TValue>& values);
-			constexpr Matrix(const TensorBase<TValue>& tensor);
-			constexpr Matrix(const Matrix<TValue>& matrix) = default;
-			constexpr Matrix(Matrix<TValue>&& matrix) = default;
+			// Tensors API
+			
+			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB);
+			
+			constexpr Matrix<TValue>& transpose();
+			
+			constexpr Matrix<TValue>& inverse();  
+			constexpr TValue determinant() const;
 
-			constexpr Matrix<TValue>& operator=(const Matrix<TValue>& matrix) = default;
-			constexpr Matrix<TValue>& operator=(Matrix<TValue>&& matrix) = default;
+			// Out of API
 
-			constexpr Vector<TValue>& operator[](uint64_t i);
-			constexpr const Vector<TValue>& operator[](uint64_t i) const;
+			static constexpr Matrix<TValue>* createAroundMemory(uint64_t row, uint64_t col, TValue* memory);
 
-			constexpr virtual ~Matrix() = default;
+			constexpr ~Matrix() = default;
 
 		private:
 
-			using DenseMatrix<Tensor<TValue, 2>>::_zero;
+			constexpr Matrix() = default;
+
+			using Tensor<TValue>::_order;
+			using Tensor<TValue>::_length;
+			using Tensor<TValue>::_sizes;
+			using Tensor<TValue>::_values;
+			using Tensor<TValue>::_owner;
+
+		friend class Tensor<TValue>;
 	};
-
+	
+	
 	template<typename TValue>
-	Matrix<TValue> operator*(const Matrix<TValue>& a, const Matrix<TValue>& b);
-	template<typename TValue>
-	Vector<TValue> operator*(const Matrix<TValue>& matrix, const Vector<TValue>& vector);
-	template<typename TValue>
-	Matrix<TValue> transpose(const Matrix<TValue>& matrix);
-
-
-	template<typename TValue>
-	class Vector : public DenseVector<Tensor<TValue, 1>>
+	class Vector : public Tensor<TValue>
 	{
+		SCP_VECTOR_DECL(Vector, Vector<TValue>, Tensor<TValue>)
+	
 		public:
 
-			Vector() = delete;
-			constexpr Vector(uint64_t size);
-			constexpr Vector(uint64_t size, const TValue& value);
-			constexpr Vector(uint64_t size, const TValue* values);
-			constexpr Vector(const std::vector<TValue>& values);
-			constexpr Vector(const std::initializer_list<TValue>& values);
-			constexpr Vector(const TensorBase<TValue>& tensor);
-			constexpr Vector(const Vector<TValue>& vector) = default;
-			constexpr Vector(Vector<TValue>&& vector) = default;
+			// Tensors API
+	
+			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const;
+			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const;
+			template<TensorConcept<TValue> TTensor> constexpr Vector<TValue>& crossProduct(const TTensor& vector);
 
-			constexpr Vector<TValue>& operator=(const Vector<TValue>& vector) = default;
-			constexpr Vector<TValue>& operator=(Vector<TValue>&& vector) = default;
+			// Out of API
+	
+			static constexpr Vector<TValue>* createAroundMemory(uint64_t size, TValue* memory);
 
-			constexpr virtual ~Vector() = default;
+			constexpr ~Vector() = default;
 
 		private:
 
-			using DenseVector<Tensor<TValue, 1>>::_zero;
-	};
+			constexpr Vector() = default;
 
-	template<typename TValue>
-	Vector<TValue> operator*(const Vector<TValue>& vector, const Matrix<TValue>& matrix);
+			using Tensor<TValue>::_order;
+			using Tensor<TValue>::_length;
+			using Tensor<TValue>::_sizes;
+			using Tensor<TValue>::_values;
+			using Tensor<TValue>::_owner;
+
+		friend class Tensor<TValue>;
+	};
 }
 
 #include <SciPP/Core/Tensor/templates/Tensor.hpp>

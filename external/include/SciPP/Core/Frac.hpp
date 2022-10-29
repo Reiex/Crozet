@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,7 +5,10 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
+#include <SciPP/Core/misc.hpp>
 
 namespace scp
 {
@@ -51,7 +52,7 @@ namespace scp
 
 		protected:
 
-			constexpr void simplify();
+			constexpr void _simplify();
 
 			static const TValue _zero;
 			static const TValue _one;

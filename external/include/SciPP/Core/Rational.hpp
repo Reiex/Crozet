@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,7 +5,10 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
+#include <SciPP/Core/Frac.hpp>
 #include <SciPP/Core/BigInt.hpp>
 
 namespace scp
@@ -53,7 +54,7 @@ namespace scp
 
 		private:
 
-			using Frac<TInteger>::simplify;
+			using Frac<TInteger>::_simplify;
 
 			using Frac<TInteger>::_zero;
 			using Frac<TInteger>::_one;

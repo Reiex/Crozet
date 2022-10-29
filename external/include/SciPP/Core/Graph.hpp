@@ -1,5 +1,3 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
@@ -7,7 +5,10 @@
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#pragma once
+
 #include <SciPP/Core/types.hpp>
+#include <SciPP/Core/Tensor/TensorBase.hpp>
 
 namespace scp
 {
@@ -39,8 +40,8 @@ namespace scp
 			std::vector<uint64_t> getEdges(uint64_t nodeIdFrom = -1, uint64_t nodeIdTo = -1) const;
 			const std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::vector<uint64_t>>>& getEdgeMap() const;
 
-			void setFromAdjacencyMatrix(const TensorBase<TEdge>& matrix, const std::vector<TNode>& nodeValues);
-			void getAdjacencyMatrix(TensorBase<TEdge>& matrix, std::vector<TNode>& nodeValues) const;
+			template<TensorConcept<TEdge> TTensor> void setFromAdjacencyMatrix(const TTensor& matrix, const std::vector<TNode>& nodeValues);
+			template<TensorConcept<TEdge> TTensor> void getAdjacencyMatrix(TTensor& matrix, std::vector<TNode>& nodeValues) const;
 
 			struct PathfindingResult
 			{

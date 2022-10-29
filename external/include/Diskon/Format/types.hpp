@@ -95,6 +95,22 @@ namespace dsk
 		}
 		class XmlIStream;
 		class XmlOStream;
+
+		namespace pnm
+		{
+			enum class Format;
+			struct Header;
+			struct File;
+		}
+		class PnmIStream;
+		class PnmOStream;
+
+		namespace obj
+		{
+
+		}
+		class ObjIStream;
+		class ObjOStream;
 	}
 }
 

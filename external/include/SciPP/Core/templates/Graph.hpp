@@ -1,11 +1,11 @@
-#pragma once
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
 //! \date 2019-2022
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#pragma once
 
 #include <SciPP/Core/Graph.hpp>
 
@@ -233,7 +233,8 @@ namespace scp
 	}
 
 	template<typename TNode, typename TEdge>
-	void Graph<TNode, TEdge>::setFromAdjacencyMatrix(const TensorBase<TEdge>& matrix, const std::vector<TNode>& nodeValues)
+	template<TensorConcept<TEdge> TTensor>
+	void Graph<TNode, TEdge>::setFromAdjacencyMatrix(const TTensor& matrix, const std::vector<TNode>& nodeValues)
 	{
 		assert(matrix.getOrder() == 2);
 		assert(matrix.getSize(0) == matrix.getSize(1));
@@ -241,34 +242,33 @@ namespace scp
 
 		clear();
 
-		const uint64_t n = matrix.getSize(0);
+		const uint64_t m = matrix.getSize(0);
+		const uint64_t n = matrix.getElementCount();
 
-		std::vector<uint64_t> nodes(n);
-		for (uint64_t i = 0; i < n; ++i)
+		std::vector<uint64_t> nodes(m);
+		for (uint64_t i = 0; i < m; ++i)
 		{
 			nodes[i] = addNode(nodeValues[i]);
 		}
 
-		for (const TensorPosition& pos : matrix)
+		for (uint64_t i = 0; i < n; ++i)
 		{
-			const TEdge& value = matrix.get(pos.indices);
+			const TEdge& value = matrix.get(i);
 			if (value != _zeroEdge)
 			{
-				addEdge(nodes[pos.indices[0]], nodes[pos.indices[1]], value);
+				addEdge(nodes[i / m], nodes[i % m], value);
 			}
 		}
 	}
 
 	template<typename TNode, typename TEdge>
-	void Graph<TNode, TEdge>::getAdjacencyMatrix(TensorBase<TEdge>& matrix, std::vector<TNode>& nodeValues) const
+	template<TensorConcept<TEdge> TTensor>
+	void Graph<TNode, TEdge>::getAdjacencyMatrix(TTensor& matrix, std::vector<TNode>& nodeValues) const
 	{
 		assert(matrix.getSize(0) == _nodes.size());
 		assert(matrix.getSize(1) == _nodes.size());
 
-		for (const TensorPosition& pos : matrix)
-		{
-			matrix.set(pos.indices, _zeroEdge);
-		}
+		matrix.fill(_zeroEdge);
 		nodeValues.resize(_nodes.size());
 
 		std::unordered_map<uint64_t, uint64_t> nodeIndices;

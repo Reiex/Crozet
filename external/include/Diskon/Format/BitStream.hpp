@@ -17,6 +17,9 @@ namespace dsk
 				BitIStream& operator=(const BitIStream& stream) = delete;
 				BitIStream& operator=(BitIStream&& stream) = delete;
 
+				void setBitEndianness(std::endian bitEndianness);
+				std::endian getBitEndianness() const;
+
 				const FormatError& extractBytes(uint64_t count);
 				const FormatError& readBits(uint8_t* data, uint64_t bitCount);
 				const FormatError& discardBits(uint64_t bitCount);
@@ -32,6 +35,7 @@ namespace dsk
 
 				void onSourceRemoved() override final;
 
+				std::endian _bitEndianness;
 				std::deque<uint8_t> _bytesExtracted;
 				uint64_t _bitsExtracted;
 		};
@@ -47,6 +51,9 @@ namespace dsk
 				BitOStream& operator=(const BitOStream& stream) = delete;
 				BitOStream& operator=(BitOStream&& stream) = delete;
 
+				void setBitEndianness(std::endian bitEndianness);
+				std::endian getBitEndianness() const;
+
 				const FormatError& writeBits(const uint8_t* data, uint64_t bitCount);
 				const FormatError& flush();
 
@@ -56,6 +63,7 @@ namespace dsk
 
 				void onDestinationRemoved() override final;
 
+				std::endian _bitEndianness;
 				uint8_t _byteWritten;
 				uint8_t _bitsWritten;
 		};

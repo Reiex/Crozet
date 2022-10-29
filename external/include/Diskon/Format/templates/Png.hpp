@@ -11,8 +11,6 @@ namespace dsk
 		{
 			FMT_BEGIN("PngIStream::readFile(png::File<TSample>& file)");
 
-			assert(!_headerRead);
-
 			// Read header
 
 			FMT_CALL(readHeader, file.header);
