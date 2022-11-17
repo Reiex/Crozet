@@ -127,6 +127,12 @@ namespace scp
 
 		return result;
 	}
+
+	constexpr uint64_t TensorShape::getIndex(const std::initializer_list<uint64_t>& indices) const
+	{
+		assert(indices.size() == order);
+		return getIndex(indices.begin());
+	}
 	
 	constexpr void TensorShape::getIndices(uint64_t index, uint64_t* indices) const
 	{

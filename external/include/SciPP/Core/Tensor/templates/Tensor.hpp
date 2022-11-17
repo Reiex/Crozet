@@ -8,6 +8,7 @@
 #pragma once
 
 #include <SciPP/Core/Tensor/Tensor.hpp>
+#include <SciPP/Core/misc.hpp>
 
 namespace scp
 {
@@ -86,6 +87,9 @@ namespace scp
 	template<TensorConcept<TValue> TTensor>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator+=(const TTensor& tensor)
 	{
+		assert(_order == tensor.getOrder());
+		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
+
 		return transform(tensor.begin(), std::plus<TValue>());
 	}
 
@@ -93,6 +97,9 @@ namespace scp
 	template<TensorConcept<TValue> TTensor>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator-=(const TTensor& tensor)
 	{
+		assert(_order == tensor.getOrder());
+		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
+
 		return transform(tensor.begin(), std::minus<TValue>());
 	}
 
@@ -148,6 +155,9 @@ namespace scp
 	template<TensorConcept<TValue> TTensor>
 	constexpr Tensor<TValue>& Tensor<TValue>::hadamardProduct(const TTensor& tensor)
 	{
+		assert(_order == tensor.getOrder());
+		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
+
 		return transform(tensor.begin(), std::multiplies<TValue>());
 	}
 
@@ -156,23 +166,26 @@ namespace scp
 	{
 		if constexpr (IsComplex<TValue>)
 		{
-			uint64_t* stride = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-			std::fill(stride, stride + _order, 0);
-
-			uint64_t* offset = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-			std::fill<uint64_t*, uint64_t>(offset, offset + _order, 1);
-
-			TValue** exponentials = reinterpret_cast<TValue**>(alloca(_order * sizeof(TValue*)));
+			TValue** bases = new TValue*[_order];
 			for (uint64_t i = 0; i < _order; ++i)
 			{
-				exponentials[i] = reinterpret_cast<TValue*>(alloca(_sizes[i] * sizeof(TValue)));
-				for (uint64_t j = 0; j < _sizes[i]; ++j)
+				bases[i] = new TValue[_sizes[i]];
+
+				TValue x = std::exp(TValue(0, -2 * std::numbers::pi / _sizes[i]));
+				bases[i][0] = 1;
+				for (uint64_t j = 1; j < _sizes[i]; ++j)
 				{
-					exponentials[i][j] = std::exp(TValue(0, -2 * std::numbers::pi * j / _sizes[i]));
+					bases[i][j] = x * bases[i][j - 1];
 				}
 			}
 
-			_cooleyTukey(exponentials, _sizes, offset, stride);
+			_ndCooleyTukey(_values, _order, bases);
+
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				delete[] bases[i];
+			}
+			delete[] bases;
 		}
 		else
 		{
@@ -187,23 +200,26 @@ namespace scp
 	{
 		if constexpr (IsComplex<TValue>)
 		{
-			uint64_t* stride = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-			std::fill(stride, stride + _order, 0);
-
-			uint64_t* offset = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-			std::fill<uint64_t*, uint64_t>(offset, offset + _order, 1);
-
-			TValue** exponentials = reinterpret_cast<TValue**>(alloca(_order * sizeof(TValue*)));
+			TValue** bases = new TValue * [_order];
 			for (uint64_t i = 0; i < _order; ++i)
 			{
-				exponentials[i] = reinterpret_cast<TValue*>(alloca(_sizes[i] * sizeof(TValue)));
-				for (uint64_t j = 0; j < _sizes[i]; ++j)
+				bases[i] = new TValue[_sizes[i]];
+
+				TValue x = std::exp(TValue(0, 2 * std::numbers::pi / _sizes[i]));
+				bases[i][0] = 1;
+				for (uint64_t j = 1; j < _sizes[i]; ++j)
 				{
-					exponentials[i][j] = std::exp(TValue(0, 2 * std::numbers::pi * j / _sizes[i]));
+					bases[i][j] = x * bases[i][j - 1];
 				}
 			}
 
-			_cooleyTukey(exponentials, _sizes, offset, stride);
+			_ndCooleyTukey(_values, _order, bases);
+
+			for (uint64_t i = 0; i < _order; ++i)
+			{
+				delete[] bases[i];
+			}
+			delete[] bases;
 
 			*this /= TValue(_length);
 		}
@@ -297,51 +313,99 @@ namespace scp
 	namespace _scp
 	{
 		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
-		constexpr TValue lerp(const TTensor& tensor, const uint64_t* sizesRev, uint64_t* indicesRev, const TScalar* coeffsRev, uint64_t nCoeffs)
+		constexpr TValue lerp(const TTensor& tensor, const uint64_t& order, const uint64_t* sizes, uint64_t* indices, const TScalar* coeffs, uint64_t n)
 		{
-			if (nCoeffs == 0)
+			if (n == order)
 			{
-				return tensor.get(indicesRev + 1);
+				return tensor.get(indices);
 			}
-		
-			const TValue x = _scp::lerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-			++(*indicesRev);
-			const TValue y = *indicesRev == *sizesRev ? x : _scp::lerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-			--(*indicesRev);
-		
-			return *coeffsRev * y + (1.0 - *coeffsRev) * x;
+
+			static constexpr TScalar zero = 0;
+			static constexpr TScalar one = 1;
+
+			const TScalar& t = coeffs[n];
+			uint64_t& index = indices[n];
+
+			if (index == sizes[n] - 1 || t == zero)
+			{
+				return lerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+			}
+			else if (t == one)
+			{
+				++index;
+				const TValue x = lerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				--index;
+				return x;
+			}
+			else
+			{
+				const TValue x = lerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				++index;
+				const TValue y = lerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				--index;
+
+				return t * y + (one - t) * x;
+			}
 		}
-		
+
 		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
-		constexpr TValue cerp(const TTensor& tensor, const uint64_t* sizesRev, uint64_t* indicesRev, const TScalar* coeffsRev, uint64_t nCoeffs)
+		constexpr TValue cerp(const TTensor& tensor, const uint64_t& order, const uint64_t* sizes, uint64_t* indices, const TScalar* coeffs, uint64_t n)
 		{
-			if (nCoeffs == 0)
+			if (n == order)
 			{
-				return tensor.get(indicesRev + 1);
+				return tensor.get(indices);
 			}
-		
-			const TValue x1 = _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-			--(*indicesRev);
-			const TValue x0 = *indicesRev == UINT64_MAX ? x1 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-			*indicesRev += 2;
-			const TValue x2 = *indicesRev == *sizesRev ? x1 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-			TValue x3 = x2;
-			if (*indicesRev != *sizesRev)
+
+			static constexpr TScalar zero = 0;
+			static constexpr TScalar one = 1;
+
+			const TScalar& t = coeffs[n];
+			uint64_t& index = indices[n];
+
+			if (t == zero)
 			{
-				++(*indicesRev);
-				x3 = *indicesRev == *sizesRev ? x2 : _scp::cerp<TValue>(tensor, sizesRev - 1, indicesRev - 1, coeffsRev - 1, nCoeffs - 1);
-				--(*indicesRev);
+				return cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
 			}
-			--(*indicesRev);
-		
-			const TValue a = -0.5*x0 + 1.5*x1 - 1.5*x2 + 0.5*x3;
-			const TValue b =      x0 - 2.5*x1 + 2.0*x2 - 0.5*x3;
-			const TValue c = -0.5*x0          + 0.5*x2;
-			const TValue d =               x1;
-		
-			const TScalar& t = *coeffsRev;
-		
-			return d + t*(c + t*(b + t*a));
+			else if (t == one)
+			{
+				++index;
+				const TValue x = cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				--index;
+				return x;
+			}
+			else
+			{
+				const TValue x1 = cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				--index;
+				const TValue x0 = index == UINT64_MAX ? x1 : cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				index += 2;
+				const TValue x2 = index == sizes[n] ? x1 : cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+				TValue x3 = x2;
+				if (index != sizes[n])
+				{
+					++index;
+					x3 = index == sizes[n] ? x2 : cerp<TValue>(tensor, order, sizes, indices, coeffs, n + 1);
+					--index;
+				}
+				--index;
+
+				const TScalar tSq = t * t;
+				const TScalar tCu = tSq * t;
+
+				const TScalar a = 2 * tSq - tCu - t;
+				const TScalar b = 3 * tCu - 5 * tSq + t + one;
+				const TScalar c = 4 * tSq - 3 * tCu;
+				const TScalar d = tCu - tSq;
+
+				if constexpr (std::integral<TValue>)
+				{
+					return std::clamp<TScalar>(x0 * a + x1 * b + x2 * c + x3 * d, std::numeric_limits<TValue>::min(), std::numeric_limits<TValue>::max());
+				}
+				else
+				{
+					return x3 * a + x2 * b + x1 * c + x0 * d;
+				}
+			}
 		}
 	}
 
@@ -363,10 +427,6 @@ namespace scp
 			sizesRatio[i] = static_cast<TScalar>(tensorShape.sizes[i] - 1) / (_sizes[i] - 1);
 		}
 		
-		const uint64_t* sizesRev = tensorShape.sizes + _order - 1;
-		uint64_t* indicesRev = indices + _order - 1;
-		const TScalar* coeffsRev = coeffs + _order - 1;
-		
 		for (const TensorPosition& pos : shape)
 		{
 			for (uint64_t i = 0; i < _order; ++i)
@@ -382,11 +442,11 @@ namespace scp
 			}
 			else if constexpr (IMethod == InterpolationMethod::Linear)
 			{
-				_values[pos.index] = _scp::lerp<TValue>(tensor, sizesRev, indicesRev, coeffsRev, _order);
+				_values[pos.index] = _scp::lerp<TValue>(tensor, tensorShape.order, tensorShape.sizes, indices, coeffs, 0);
 			}
 			else if constexpr (IMethod == InterpolationMethod::Cubic)
 			{
-				_values[pos.index] = _scp::cerp<TValue>(tensor, sizesRev, indicesRev, coeffsRev, _order);
+				_values[pos.index] = _scp::cerp<TValue>(tensor, tensorShape.order, tensorShape.sizes, indices, coeffs, 0);
 			}
 		}
 	}
@@ -395,51 +455,49 @@ namespace scp
 	template<TensorConcept<TValue> TTensor>
 	constexpr void Tensor<TValue>::tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j)
 	{
-		// TODO
+		const TensorShape shape{ _order, _sizes };
+		const TensorShape tensorShape{ tensor.getOrder(), tensor.getSizes() };
 
-		// const TensorShape shape{ getOrder(), getSizes() };
-		// const TensorShape resultShape{ result.getOrder(), result.getSizes() };
-		// 
-		// assert(shape.order > 2);
-		// assert(resultShape.order == shape.order - 2);
-		// assert(i != j);
-		// assert(shape.sizes[i] == shape.sizes[j]);
-		// 
-		// if (i > j)
-		// {
-		// 	std::swap(i, j);
-		// }
-		// 
-		// assert(i == 0 || std::equal(shape.sizes, shape.sizes + i, resultShape.sizes));
-		// assert(j == i + 1 || std::equal(shape.sizes + i + 1, shape.sizes + j, resultShape.sizes + i));
-		// assert(j == shape.order - 1 || std::equal(shape.sizes + j + 1, shape.sizes + shape.order, resultShape.sizes + j - 1));
-		// 
-		// uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(shape.order * sizeof(uint64_t)));
-		// for (const TensorPosition& pos : resultShape)
-		// {
-		// 	if (i != 0)
-		// 	{
-		// 		std::copy(pos.indices, pos.indices + i, indices);
-		// 	}
-		// 	if (i != j - 1)
-		// 	{
-		// 		std::copy(pos.indices + i, pos.indices + j - 1, indices + i + 1);
-		// 	}
-		// 	if (j != shape.order - 1)
-		// 	{
-		// 		std::copy(pos.indices + j - 1, pos.indices + resultShape.order, indices + j + 1);
-		// 	}
-		// 
-		// 	TValue value = 0;
-		// 	for (uint64_t k = 0; k < shape.sizes[i]; ++k)
-		// 	{
-		// 		indices[i] = k;
-		// 		indices[j] = k;
-		// 		value += get(indices);
-		// 	}
-		// 
-		// 	result.set(pos.index, value);
-		// }
+		assert(tensorShape.order > 2);
+		assert(_order == tensorShape.order - 2);
+		assert(i != j);
+		assert(i < tensorShape.order);
+		assert(j < tensorShape.order);
+		assert(tensorShape.sizes[i] == tensorShape.sizes[j]);
+
+		if (i > j)
+		{
+			std::swap(i, j);
+		}
+
+		assert(i == 0 || std::equal(_sizes, _sizes + i, tensorShape.sizes));
+		assert(j == i + 1 || std::equal(_sizes + i, _sizes + j - 1, tensorShape.sizes + i + 1));
+		assert(j == tensorShape.order - 1 || std::equal(_sizes + j - 1, _sizes + _order, tensorShape.sizes + j + 1));
+		
+		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(shape.order * sizeof(uint64_t)));
+		for (const TensorPosition& pos : shape)
+		{
+			if (i != 0)
+			{
+				std::copy(pos.indices, pos.indices + i, indices);
+			}
+			if (i != j - 1)
+			{
+				std::copy(pos.indices + i, pos.indices + j - 1, indices + i + 1);
+			}
+			if (j != shape.order - 1)
+			{
+				std::copy(pos.indices + j - 1, pos.indices + _order, indices + j + 1);
+			}
+		
+			_values[pos.index] = 0;
+			for (uint64_t k = 0; k < tensorShape.sizes[i]; ++k)
+			{
+				indices[i] = k;
+				indices[j] = k;
+				_values[pos.index] += tensor.get(indices);
+			}
+		}
 	}
 
 	template<typename TValue>
@@ -470,6 +528,9 @@ namespace scp
 	template<TensorConcept<TValue> TTensor>
 	constexpr TValue Tensor<TValue>::innerProduct(const TTensor& tensor) const
 	{
+		assert(_order == tensor.getOrder());
+		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
+
 		return std::inner_product(_values, _values + _length, tensor.begin(), TValue(0));
 	}
 
@@ -489,42 +550,6 @@ namespace scp
 	constexpr const TValue& Tensor<TValue>::maxElement(const std::function<bool(const TValue&, const TValue&)>& compare) const
 	{
 		return *std::max_element(_values, _values + _length, compare);
-	}
-
-	template<typename TValue>
-	template<typename TScalar, InterpolationMethod IMethod>
-	constexpr TValue Tensor<TValue>::getInterpolated(const TScalar* scalarIndices) const
-	{
-		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		TScalar* coeffs = reinterpret_cast<TScalar*>(alloca(_order * sizeof(TScalar)));
-
-		for (uint64_t i = 0; i < _order; ++i)
-		{
-			assert(scalarIndices[i] >= 0 && scalarIndices[i] <= _sizes[i] - 1);
-			indices[i] = static_cast<uint64_t>(scalarIndices[i]);
-			coeffs[i] = scalarIndices[i] - indices[i];
-		}
-
-		if constexpr (IMethod == InterpolationMethod::Nearest)
-		{
-			return get(indices);
-		}
-		else if constexpr (IMethod == InterpolationMethod::Linear)
-		{
-			return _scp::lerp<TValue>(*this, _sizes + _order - 1, indices + _order - 1, coeffs + _order - 1, _order);
-		}
-		else if constexpr (IMethod == InterpolationMethod::Cubic)
-		{
-			return _scp::cerp<TValue>(*this, _sizes + _order - 1, indices + _order - 1, coeffs + _order - 1, _order);
-		}
-	}
-
-	template<typename TValue>
-	template<typename TScalar, InterpolationMethod IMethod>
-	constexpr TValue Tensor<TValue>::getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const
-	{
-		assert(scalarIndices.size() == _order);
-		return getInterpolated(scalarIndices.begin());
 	}
 
 	template<typename TValue>
@@ -604,6 +629,56 @@ namespace scp
 	}
 
 	template<typename TValue>
+	template<typename TScalar, InterpolationMethod IMethod>
+	constexpr TValue Tensor<TValue>::getInterpolated(const TScalar* scalarIndices) const
+	{
+		// TODO: Handle different border behaviours ?
+
+		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
+		TScalar* coeffs = reinterpret_cast<TScalar*>(alloca(_order * sizeof(TScalar)));
+
+		for (uint64_t i = 0; i < _order; ++i)
+		{
+			if (scalarIndices[i] < 0)
+			{
+				indices[i] = 0;
+				coeffs[i] = 0;
+			}
+			else if (scalarIndices[i] > _sizes[i] - 1)
+			{
+				indices[i] = _sizes[i] - 1;
+				coeffs[i] = 0;
+			}
+			else
+			{
+				indices[i] = static_cast<uint64_t>(scalarIndices[i]);
+				coeffs[i] = scalarIndices[i] - indices[i];
+			}
+		}
+
+		if constexpr (IMethod == InterpolationMethod::Nearest)
+		{
+			return get(indices);
+		}
+		else if constexpr (IMethod == InterpolationMethod::Linear)
+		{
+			return _scp::lerp<TValue>(*this, _order, _sizes, indices, coeffs, 0);
+		}
+		else if constexpr (IMethod == InterpolationMethod::Cubic)
+		{
+			return _scp::cerp<TValue>(*this, _order, _sizes, indices, coeffs, 0);
+		}
+	}
+
+	template<typename TValue>
+	template<typename TScalar, InterpolationMethod IMethod>
+	constexpr TValue Tensor<TValue>::getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const
+	{
+		assert(scalarIndices.size() == _order);
+		return getInterpolated<TScalar, IMethod>(scalarIndices.begin());
+	}
+
+	template<typename TValue>
 	constexpr TValue* Tensor<TValue>::begin()
 	{
 		return _values;
@@ -642,7 +717,8 @@ namespace scp
 	template<typename TValue>
 	constexpr const TValue& Tensor<TValue>::get(uint64_t index) const
 	{
-		return (*this)[index];
+		assert(index < _length);
+		return _values[index];
 	}
 
 	template<typename TValue>
@@ -656,7 +732,9 @@ namespace scp
 	template<typename TValue>
 	constexpr const TValue& Tensor<TValue>::get(const std::initializer_list<uint64_t>& indices) const
 	{
-		return (*this)[indices];
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices.begin()) < _length);
+		return _values[shape.getIndex(indices.begin())];
 	}
 
 	template<typename TValue>
@@ -737,7 +815,8 @@ namespace scp
 	template<typename TValue>
 	constexpr TValue& Tensor<TValue>::get(uint64_t index)
 	{
-		return (*this)[index];
+		assert(index < _length);
+		return _values[index];
 	}
 
 	template<typename TValue>
@@ -751,7 +830,9 @@ namespace scp
 	template<typename TValue>
 	constexpr TValue& Tensor<TValue>::get(const std::initializer_list<uint64_t>& indices)
 	{
-		return (*this)[indices];
+		const TensorShape shape{ _order, _sizes };
+		assert(shape.getIndex(indices.begin()) < _length);
+		return _values[shape.getIndex(indices.begin())];
 	}
 
 	template<typename TValue>
@@ -852,139 +933,276 @@ namespace scp
 		_owner = true;
 	}
 
-	template<typename TValue>
-	constexpr void Tensor<TValue>::_cooleyTukey(const TValue* const* exponentials, const uint64_t* sizes, uint64_t* offset, uint64_t* stride)
+	namespace _scp
 	{
-		const TensorShape shape{ _order, sizes };
-		
-		// Directly exit if it is a single variable
-		
-		if (std::all_of(sizes, sizes + _order, [&](const uint64_t& x) { return x == 1; }))
+		constexpr uint64_t reverse(uint64_t n, uint8_t bitCount)
 		{
-			return;
-		}
-		
-		// Useful variables
-		
-		uint64_t* cellSizes = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		for (uint64_t i = 0; i < _order; ++i)
-		{
-			cellSizes[i] = sizes[i];
-			for (uint64_t j = 2; j < sizes[i]; ++j)
+			constexpr uint8_t lookup[256] = {
+				0b00000000, 0b10000000, 0b01000000, 0b11000000, 0b00100000, 0b10100000, 0b01100000, 0b11100000,
+				0b00010000, 0b10010000, 0b01010000, 0b11010000, 0b00110000, 0b10110000, 0b01110000, 0b11110000,
+				0b00001000, 0b10001000, 0b01001000, 0b11001000, 0b00101000, 0b10101000, 0b01101000, 0b11101000,
+				0b00011000, 0b10011000, 0b01011000, 0b11011000, 0b00111000, 0b10111000, 0b01111000, 0b11111000,
+				0b00000100, 0b10000100, 0b01000100, 0b11000100, 0b00100100, 0b10100100, 0b01100100, 0b11100100,
+				0b00010100, 0b10010100, 0b01010100, 0b11010100, 0b00110100, 0b10110100, 0b01110100, 0b11110100,
+				0b00001100, 0b10001100, 0b01001100, 0b11001100, 0b00101100, 0b10101100, 0b01101100, 0b11101100,
+				0b00011100, 0b10011100, 0b01011100, 0b11011100, 0b00111100, 0b10111100, 0b01111100, 0b11111100,
+				0b00000010, 0b10000010, 0b01000010, 0b11000010, 0b00100010, 0b10100010, 0b01100010, 0b11100010,
+				0b00010010, 0b10010010, 0b01010010, 0b11010010, 0b00110010, 0b10110010, 0b01110010, 0b11110010,
+				0b00001010, 0b10001010, 0b01001010, 0b11001010, 0b00101010, 0b10101010, 0b01101010, 0b11101010,
+				0b00011010, 0b10011010, 0b01011010, 0b11011010, 0b00111010, 0b10111010, 0b01111010, 0b11111010,
+				0b00000110, 0b10000110, 0b01000110, 0b11000110, 0b00100110, 0b10100110, 0b01100110, 0b11100110,
+				0b00010110, 0b10010110, 0b01010110, 0b11010110, 0b00110110, 0b10110110, 0b01110110, 0b11110110,
+				0b00001110, 0b10001110, 0b01001110, 0b11001110, 0b00101110, 0b10101110, 0b01101110, 0b11101110,
+				0b00011110, 0b10011110, 0b01011110, 0b11011110, 0b00111110, 0b10111110, 0b01111110, 0b11111110,
+				0b00000001, 0b10000001, 0b01000001, 0b11000001, 0b00100001, 0b10100001, 0b01100001, 0b11100001,
+				0b00010001, 0b10010001, 0b01010001, 0b11010001, 0b00110001, 0b10110001, 0b01110001, 0b11110001,
+				0b00001001, 0b10001001, 0b01001001, 0b11001001, 0b00101001, 0b10101001, 0b01101001, 0b11101001,
+				0b00011001, 0b10011001, 0b01011001, 0b11011001, 0b00111001, 0b10111001, 0b01111001, 0b11111001,
+				0b00000101, 0b10000101, 0b01000101, 0b11000101, 0b00100101, 0b10100101, 0b01100101, 0b11100101,
+				0b00010101, 0b10010101, 0b01010101, 0b11010101, 0b00110101, 0b10110101, 0b01110101, 0b11110101,
+				0b00001101, 0b10001101, 0b01001101, 0b11001101, 0b00101101, 0b10101101, 0b01101101, 0b11101101,
+				0b00011101, 0b10011101, 0b01011101, 0b11011101, 0b00111101, 0b10111101, 0b01111101, 0b11111101,
+				0b00000011, 0b10000011, 0b01000011, 0b11000011, 0b00100011, 0b10100011, 0b01100011, 0b11100011,
+				0b00010011, 0b10010011, 0b01010011, 0b11010011, 0b00110011, 0b10110011, 0b01110011, 0b11110011,
+				0b00001011, 0b10001011, 0b01001011, 0b11001011, 0b00101011, 0b10101011, 0b01101011, 0b11101011,
+				0b00011011, 0b10011011, 0b01011011, 0b11011011, 0b00111011, 0b10111011, 0b01111011, 0b11111011,
+				0b00000111, 0b10000111, 0b01000111, 0b11000111, 0b00100111, 0b10100111, 0b01100111, 0b11100111,
+				0b00010111, 0b10010111, 0b01010111, 0b11010111, 0b00110111, 0b10110111, 0b01110111, 0b11110111,
+				0b00001111, 0b10001111, 0b01001111, 0b11001111, 0b00101111, 0b10101111, 0b01101111, 0b11101111,
+				0b00011111, 0b10011111, 0b01011111, 0b11011111, 0b00111111, 0b10111111, 0b01111111, 0b11111111,
+			};
+
+			uint64_t result = lookup[n & 0xFF];
+			if (bitCount > 8)
 			{
-				if (sizes[i] % j == 0)
+				result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+				if (bitCount > 16)
 				{
-					cellSizes[i] = j;
-					break;
-				}
-			}
-		}
-		const TensorShape cellShape{ _order, cellSizes };
-		const TensorShapeIterator cellShapeBegin = cellShape.begin();
-		const TensorShapeIterator cellShapeEnd = cellShape.end();
-		
-		uint64_t* subSizes = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		for (uint64_t i = 0; i < _order; ++i)
-		{
-			subSizes[i] = sizes[i] / cellSizes[i];
-		}
-		const TensorShape subShape{ _order, subSizes };
-		
-		// Compute fft of each sub tensor
-
-		for (uint64_t i = 0; i < _order; ++i)
-		{
-			offset[i] *= cellSizes[i];
-		}
-		
-		for (const TensorPosition& pos : cellShape)
-		{
-			for (uint64_t i = 0; i < _order; ++i)
-			{
-				stride[i] += pos.indices[i] * offset[i] / cellSizes[i];
-			}
-		
-			_cooleyTukey(exponentials, subSizes, offset, stride);
-		
-			for (uint64_t i = 0; i < _order; ++i)
-			{
-				stride[i] -= pos.indices[i] * offset[i] / cellSizes[i];
-			}
-		}
-
-		for (uint64_t i = 0; i < _order; ++i)
-		{
-			offset[i] /= cellSizes[i];
-		}
-		
-		// Store the coefficients calculated before merging them
-		
-		uint64_t* indices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		uint64_t* cellIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		uint64_t* tmpCellIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-		uint64_t* tmpIndices = reinterpret_cast<uint64_t*>(alloca(_order * sizeof(uint64_t)));
-
-		Tensor<TValue> tmp(_order, sizes);
-		for (const TensorPosition& pos : shape)
-		{
-			for (uint64_t i = 0; i < _order; ++i)
-			{
-				indices[i] = stride[i] + pos.indices[i] * offset[i];
-			}
-
-			tmp._values[pos.index] = get(indices);
-		}
-		
-		// Iterate over a sub tensor and merge each cell asociated
-		
-		TensorShapeIterator cellShapeIterator = cellShapeBegin;
-		TensorShapeIterator tmpCellShapeIterator = cellShapeBegin;
-		const TensorPosition& cellPos = *cellShapeIterator;
-		const TensorPosition& tmpCellPos = *tmpCellShapeIterator;
-		for (const TensorPosition& subPos : subShape)
-		{
-			// Compute the position of the corner of the cell on '*this' and on 'tmp'
-		
-			for (uint64_t i = 0; i < _order; ++i)
-			{
-				cellIndices[i] = stride[i] + subPos.indices[i] * offset[i];
-				tmpCellIndices[i] = subPos.indices[i] * cellSizes[i];
-			}
-		
-			// Merge the elements of the cell of 'tmp' into the elements of the cell of '*this'
-		
-			for (cellShapeIterator = cellShapeBegin; cellShapeIterator != cellShapeEnd; ++cellShapeIterator)
-			{
-				for (uint64_t i = 0; i < _order; ++i)
-				{
-					indices[i] = cellIndices[i] + cellPos.indices[i] * subSizes[i] * offset[i];
-				}
-		
-				TValue value = 0;
-
-				for (tmpCellShapeIterator = cellShapeBegin; tmpCellShapeIterator != cellShapeEnd; ++tmpCellShapeIterator)
-				{
-					for (uint64_t i = 0; i < _order; ++i)
+					result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+					if (bitCount > 24)
 					{
-						tmpIndices[i] = tmpCellIndices[i] + tmpCellPos.indices[i];
+						result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+						if (bitCount > 32)
+						{
+							result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+							if (bitCount > 40)
+							{
+								result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+								if (bitCount > 48)
+								{
+									result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+									if (bitCount > 56)
+									{
+										result = (result << 8) | lookup[(n >>= 8) & 0xFF];
+									}
+								}
+							}
+						}
 					}
-		
-					TValue factor = 1;
-					for (uint64_t i = 0; i < _order; ++i)
-					{
-						factor *= exponentials[i][((subPos.indices[i] * tmpCellPos.indices[i]) % sizes[i]) * offset[i]];
-						factor *= exponentials[i][((tmpCellPos.indices[i] * cellPos.indices[i]) % cellSizes[i]) * subSizes[i] * offset[i]];
-					}
-		
-					value += factor * tmp.get(tmpIndices);
 				}
-		
-				set(indices, value);
+			}
+			return result >> ((64 - bitCount) % 8);
+		}
+	
+		template<typename TValue>
+		constexpr void bitReversal(TValue* beg, uint64_t stride, uint64_t size, uint8_t bitCount)
+		{
+			TValue* it = beg + stride;
+			for (uint64_t i = 1; i < size; ++i, it += stride)
+			{
+				uint64_t r = reverse(i, bitCount);
+				if (r > i)
+				{
+					std::swap(*it, *(beg + r * stride));
+				}
+			}
+		}
+
+		template<typename TValue>
+		constexpr void cooleyTukeyRadix2(TValue* beg, uint64_t stride, const TValue* base, uint64_t baseStride, uint64_t size)
+		{
+			if (size == 2)
+			{
+				TValue& x0 = *beg;
+				TValue& x1 = *(beg + stride);
+				const TValue tmp = x0;
+				x0 += *base * x1;
+				x1 = tmp + *(base + baseStride) * x1;
+			}
+			else
+			{
+				size >>= 1;
+				baseStride <<= 1;
+
+				cooleyTukeyRadix2(beg, stride, base, baseStride, size);
+				cooleyTukeyRadix2(beg + size * stride, stride, base, baseStride, size);
+
+				baseStride >>= 1;
+
+				TValue* it = beg;
+				TValue* it2 = it + size * stride;
+				const TValue* const itEnd = it2;
+				for (; it != itEnd; it += stride, it2 += stride, base += baseStride)
+				{
+					TValue tmp = *base * *it2;
+					*it2 = *it - tmp;
+					*it += tmp;
+				}
+			}
+		}
+
+		template<typename TValue>
+		constexpr void cooleyTukey(TValue* beg, uint64_t stride, const TValue* base, uint64_t baseStride, uint64_t size, std::pair<uint64_t, uint64_t>* factors, uint64_t factorCount)
+		{
+			if (size == 1)
+			{
+				return;
+			}
+
+			// TODO: https://en.wikipedia.org/wiki/Rader%27s_FFT_algorithm
+			// if (factorCount == 1 && factors->second == 1)
+			// {
+			// }
+
+			// Compute best radix and remove it from factors
+
+			const uint64_t radix = factors->first;
+
+			--factors->second;
+			if (factors->second == 0)
+			{
+				++factors;
+				--factorCount;
+			}
+
+			// Re-order elements according to radix
+
+			const uint64_t subSize = size / radix;
+
+			std::vector<bool> visited(size, false);
+			visited[0] = true;
+			visited[size - 1] = true;
+
+			uint64_t n = 0;
+			uint64_t preced, next;
+			while (n != size)
+			{
+				if (visited[n])
+				{
+					++n;
+					continue;
+				}
+
+				TValue tmp = *(beg + n * stride);
+				visited[n] = true;
+
+				preced = n;
+				next = preced / subSize + (preced % subSize) * radix;
+
+				while (next != n)
+				{
+					*(beg + preced * stride) = *(beg + next * stride);
+					visited[next] = true;
+
+					preced = next;
+					next = preced / subSize + (preced % subSize) * radix;
+				}
+
+				*(beg + preced * stride) = tmp;
+			}
+
+			// Run algorithm on sub-ranges
+
+			size = subSize;
+			baseStride *= radix;
+
+			for (uint64_t i = 0; i < radix; ++i)
+			{
+				cooleyTukey(beg + i * size * stride, stride, base, baseStride, size, factors, factorCount);
+			}
+
+			baseStride /= radix;
+			const uint64_t realSize = size * radix;
+
+			// Put back the factor
+
+			if (factors->first != radix)
+			{
+				--factors;
+				++factorCount;
+			}
+			++factors->second;
+
+			// Merge sub-ranges
+
+			const uint64_t rangeOffset = size * stride;
+				
+			std::vector<TValue> tmp(radix);
+			TValue* it = beg;
+			for (uint64_t i = 0; i < size; ++i, it += stride)
+			{
+				for (uint64_t j = 0; j < radix; ++j, it += rangeOffset)
+				{
+					tmp[j] = *it;
+				}
+				it -= radix * rangeOffset;
+
+				uint64_t coeff = i;
+				for (uint64_t j = 0; j < radix; ++j, it += rangeOffset, coeff += size)
+				{
+					*it = 0;
+					for (uint64_t k = 0; k < radix; ++k)
+					{
+						*it += tmp[k] * *(base + ((k * coeff) % realSize) * baseStride);
+					}
+				}
+				it -= radix * rangeOffset;
 			}
 		}
 	}
 
-	
+	template<typename TValue>
+	constexpr void Tensor<TValue>::_ndCooleyTukey(TValue* beg, uint64_t order, const TValue* const* bases)
+	{
+		const uint64_t& size = *(_sizes + _order - order);
+		
+		const uint64_t subLength = std::accumulate(_sizes + _order - order + 1, _sizes + _order, 1, std::multiplies<uint64_t>());
+		
+		if (order > 1)
+		{
+			for (uint64_t i = 0; i < size; ++i)
+			{
+				_ndCooleyTukey(beg + i * subLength, order - 1, bases);
+			}
+		}
+
+		if (size > 1)
+		{
+			const TValue* base = bases[_order - order];
+
+			if ((size & (size - 1)) == 0)
+			{
+				for (uint64_t i = 0; i < subLength; ++i)
+				{
+					_scp::bitReversal(beg + i, subLength, size, std::log2(size));
+					_scp::cooleyTukeyRadix2(beg + i, subLength, base, 1, size);
+				}
+			}
+			else
+			{
+				std::vector<std::pair<uint64_t, uint64_t>> factors, factorsCopy;
+				primeFactors(size, factors);
+
+				for (uint64_t i = 0; i < subLength; ++i)
+				{
+					factorsCopy = factors;
+					_scp::cooleyTukey(beg + i, subLength, base, 1, size, factorsCopy.data(), factorsCopy.size());
+				}
+			}
+		}
+	}
+
+
 	SCP_MATRIX_DEF(template<typename TValue>, Matrix, Matrix<TValue>)
 
 	template<typename TValue>

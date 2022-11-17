@@ -50,10 +50,10 @@ namespace scp
 			constexpr TValue norm() const;
 			constexpr const TValue& minElement(const std::function<bool(const TValue&, const TValue&)>& compare = std::less<TValue>()) const;
 			constexpr const TValue& maxElement(const std::function<bool(const TValue&, const TValue&)>& compare = std::less<TValue>()) const;
-			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const TScalar* scalarIndices) const;
-			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const;
 			template<BorderBehaviour BBehaviour> constexpr const TValue& getOutOfBound(const int64_t* indices) const;
 			template<BorderBehaviour BBehaviour> constexpr const TValue& getOutOfBound(const std::initializer_list<int64_t>& indices) const;
+			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const TScalar* scalarIndices) const;
+			template<typename TScalar, InterpolationMethod IMethod> constexpr TValue getInterpolated(const std::initializer_list<TScalar>& scalarIndices) const;
 
 
 			constexpr TValue* begin();
@@ -105,8 +105,8 @@ namespace scp
 			template<TensorConcept<TValue> TTensor> constexpr void _moveFrom(TTensor&& tensor);
 			constexpr void _destroy();
 
-			constexpr void _cooleyTukey(const TValue* const* exponentials, const uint64_t* sizes, uint64_t* offset, uint64_t* stride);
-
+			constexpr void _ndCooleyTukey(TValue* beg, uint64_t order, const TValue* const* bases);
+			
 			uint64_t _order;
 			uint64_t _length;
 			uint64_t* _sizes;
@@ -122,13 +122,15 @@ namespace scp
 	
 		public:
 
-			// Tensors API
+			// Matrix API
 			
 			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB);
 			
 			constexpr Matrix<TValue>& transpose();
 			
-			constexpr Matrix<TValue>& inverse();  
+			constexpr Matrix<TValue>& inverse();
+			// cholesky, LDL, LU, QR, Polar, etc....
+
 			constexpr TValue determinant() const;
 
 			// Out of API
@@ -158,7 +160,7 @@ namespace scp
 	
 		public:
 
-			// Tensors API
+			// Vector API
 	
 			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const;
 			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const;

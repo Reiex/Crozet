@@ -47,7 +47,7 @@ namespace scp
 	constexpr bool isPrime(const T& n);
 
 	template<typename T>
-	constexpr std::vector<std::pair<T, uint64_t>> primeFactors(const T& n);
+	constexpr void primeFactors(T n, std::vector<std::pair<T, uint64_t>>& factors);
 
 	template<typename T>
 	constexpr std::vector<T> divisors(const T& n);

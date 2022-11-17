@@ -214,31 +214,29 @@ namespace scp
 	}
 
 	template<typename T>
-	constexpr std::vector<std::pair<T, uint64_t>> primeFactors(const T& n)
+	constexpr void primeFactors(T n, std::vector<std::pair<T, uint64_t>>& factors)
 	{
-		T copy(n);
-
-		std::vector<std::pair<T, uint64_t>> factors;
+		factors.clear();
 
 		uint64_t j = 0;
-		while (copy % 2 == 0)
+		while (n % 2 == 0)
 		{
 			++j;
-			copy >>= 1;
+			n >>= 1;
 		}
 
 		if (j != 0)
 		{
-			factors.push_back({ T(2), j });
+			factors.push_back({ 2, j });
 		}
 
-		for (T i = 3; i * i <= copy; i += 2)
+		for (T i = 3; i * i <= n; i += 2)
 		{
 			j = 0;
-			while (copy % i == 0)
+			while (n % i == 0)
 			{
 				++j;
-				copy /= i;
+				n /= i;
 			}
 
 			if (j != 0)
@@ -247,12 +245,10 @@ namespace scp
 			}
 		}
 
-		if (copy != 1)
+		if (n != 1)
 		{
-			factors.push_back({ copy, 1 });
+			factors.push_back({ n, 1 });
 		}
-
-		return factors;
 	}
 
 	template<typename T>

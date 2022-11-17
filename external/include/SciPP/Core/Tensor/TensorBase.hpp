@@ -399,6 +399,7 @@ namespace scp
 		const uint64_t* sizes;
 
 		constexpr uint64_t getIndex(const uint64_t* indices) const;
+		constexpr uint64_t getIndex(const std::initializer_list<uint64_t>& indices) const;
 		constexpr void getIndices(uint64_t index, uint64_t* indices) const;
 		constexpr uint64_t getElementCount() const;
 
