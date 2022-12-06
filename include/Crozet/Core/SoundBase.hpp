@@ -2,6 +2,7 @@
 
 #include <Crozet/Core/types.hpp>
 #include <Crozet/Core/SoundSource.hpp>
+#include <Crozet/Core/FilterBase.hpp>
 
 namespace crz
 {

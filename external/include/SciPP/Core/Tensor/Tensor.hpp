@@ -21,31 +21,31 @@ namespace scp
 
 			// Tensors API
 
-			constexpr Tensor<TValue>& fill(const TValue& value);
-			template<std::input_iterator TInput> constexpr Tensor<TValue>& copy(TInput it);
-			constexpr Tensor<TValue>& transform(const std::function<TValue(const TValue&)>& unaryOp);
-			template<std::input_iterator TInput> constexpr Tensor<TValue>& transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp);
+			constexpr void fill(const TValue& value);
+			template<std::input_iterator TInput> constexpr void copy(TInput it);
+			constexpr void transform(const std::function<TValue(const TValue&)>& unaryOp);
+			template<std::input_iterator TInput> constexpr void transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp);
 
-			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& operator+=(const TTensor& tensor);
-			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& operator-=(const TTensor& tensor);
+			template<CTensor<TValue> TTensor> constexpr Tensor<TValue>& operator+=(const TTensor& tensor);
+			template<CTensor<TValue> TTensor> constexpr Tensor<TValue>& operator-=(const TTensor& tensor);
 			template<typename TScalar> constexpr Tensor<TValue>& operator*=(const TScalar& scalar);
 			template<typename TScalar> constexpr Tensor<TValue>& operator/=(const TScalar& scalar);
-			constexpr Tensor<TValue>& negate();
+			constexpr void negate();
 
-			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void tensorProduct(const TTensorA& tensorA, const TTensorB& tensorB);
-			template<TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& hadamardProduct(const TTensor& tensor);
-			constexpr Tensor<TValue>& fft();
-			constexpr Tensor<TValue>& ifft();
+			template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB> constexpr void tensorProduct(const TTensorA& tensorA, const TTensorB& tensorB);
+			template<CTensor<TValue> TTensor> constexpr void hadamardProduct(const TTensor& tensor);
+			constexpr void fft();
+			constexpr void ifft();
 
-			template<BorderBehaviour BBehaviour, TensorConcept<TValue> TTensor> constexpr Tensor<TValue>& convolution(const TTensor& kernel);
+			template<BorderBehaviour BBehaviour, CTensor<TValue> TTensor> constexpr void convolution(const TTensor& kernel);
 
-			template<typename TScalar, InterpolationMethod IMethod, TensorConcept<TValue> TTensor> constexpr void interpolation(const TTensor& tensor);
-			template<TensorConcept<TValue> TTensor> constexpr void tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j);
+			template<typename TScalar, InterpolationMethod IMethod, CTensor<TValue> TTensor> constexpr void interpolation(const TTensor& tensor);
+			template<CTensor<TValue> TTensor> constexpr void tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j);
 
-			template<TensorConcept<TValue> TTensor> constexpr bool operator==(const TTensor& tensor) const;
-			template<TensorConcept<TValue> TTensor> constexpr bool operator!=(const TTensor& tensor) const;
+			template<CTensor<TValue> TTensor> constexpr bool operator==(const TTensor& tensor) const;
+			template<CTensor<TValue> TTensor> constexpr bool operator!=(const TTensor& tensor) const;
 
-			template<TensorConcept<TValue> TTensor> constexpr TValue innerProduct(const TTensor& tensor) const;
+			template<CTensor<TValue> TTensor> constexpr TValue innerProduct(const TTensor& tensor) const;
 
 			constexpr TValue norm() const;
 			constexpr const TValue& minElement(const std::function<bool(const TValue&, const TValue&)>& compare = std::less<TValue>()) const;
@@ -101,8 +101,8 @@ namespace scp
 			constexpr Tensor();
 
 			constexpr void _create(uint64_t order, const uint64_t* sizes);
-			template<TensorConcept<TValue> TTensor> constexpr void _copyFrom(const TTensor& tensor);
-			template<TensorConcept<TValue> TTensor> constexpr void _moveFrom(TTensor&& tensor);
+			template<CTensor<TValue> TTensor> constexpr void _copyFrom(const TTensor& tensor);
+			template<CTensor<TValue> TTensor> constexpr void _moveFrom(TTensor&& tensor);
 			constexpr void _destroy();
 
 			constexpr void _ndCooleyTukey(TValue* beg, uint64_t order, const TValue* const* bases);
@@ -124,12 +124,12 @@ namespace scp
 
 			// Matrix API
 			
-			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB);
+			template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB> constexpr void matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB);
 			
-			constexpr Matrix<TValue>& transpose();
+			constexpr void transpose();
 			
-			constexpr Matrix<TValue>& inverse();
-			// cholesky, LDL, LU, QR, Polar, etc....
+			constexpr void inverse();
+			// TODO: cholesky, LDL, LU, QR, Polar, etc....
 
 			constexpr TValue determinant() const;
 
@@ -162,9 +162,9 @@ namespace scp
 
 			// Vector API
 	
-			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const;
-			template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB> constexpr void leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const;
-			template<TensorConcept<TValue> TTensor> constexpr Vector<TValue>& crossProduct(const TTensor& vector);
+			template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB> constexpr void rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const;
+			template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB> constexpr void leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const;
+			template<CTensor<TValue> TTensor> constexpr void crossProduct(const TTensor& vector);
 
 			// Out of API
 	

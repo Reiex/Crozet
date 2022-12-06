@@ -233,7 +233,7 @@ namespace scp
 	}
 
 	template<typename TNode, typename TEdge>
-	template<TensorConcept<TEdge> TTensor>
+	template<CTensor<TEdge> TTensor>
 	void Graph<TNode, TEdge>::setFromAdjacencyMatrix(const TTensor& matrix, const std::vector<TNode>& nodeValues)
 	{
 		assert(matrix.getOrder() == 2);
@@ -262,7 +262,7 @@ namespace scp
 	}
 
 	template<typename TNode, typename TEdge>
-	template<TensorConcept<TEdge> TTensor>
+	template<CTensor<TEdge> TTensor>
 	void Graph<TNode, TEdge>::getAdjacencyMatrix(TTensor& matrix, std::vector<TNode>& nodeValues) const
 	{
 		assert(matrix.getSize(0) == _nodes.size());

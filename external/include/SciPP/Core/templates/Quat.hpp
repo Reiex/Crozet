@@ -140,7 +140,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Quat<TValue>::setFromRotationAxisAngle(const TTensor& axis, const TValue& angle)
 	{
 		assert(axis.getOrder() == 1);
@@ -149,7 +149,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Quat<TValue>::getRotationAxisAngle(TTensor& axis, TValue& angle)
 	{
 		assert(axis.getOrder() == 1);
@@ -217,7 +217,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Quat<TValue>::setFromRotationMatrix(const TTensor& matrix)
 	{
 		assert(matrix.getOrder() == 2);
@@ -233,7 +233,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Quat<TValue>::getRotationMatrix(TTensor& matrix) const
 	{
 		assert(matrix.getOrder() == 2);
@@ -265,7 +265,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr Quat<TValue>& Quat<TValue>::inverse()
+	constexpr void Quat<TValue>::inverse()
 	{
 		assert(w != _zero || x != _zero || y != _zero || z != _zero);
 
@@ -274,18 +274,14 @@ namespace scp
 		x = -x / length;
 		y = -y / length;
 		z = -z / length;
-
-		return *this;
 	}
 
 	template<typename TValue>
-	constexpr Quat<TValue>& Quat<TValue>::conjugate()
+	constexpr void Quat<TValue>::conjugate()
 	{
 		x = -x;
 		y = -y;
 		z = -z;
-
-		return *this;
 	}
 
 	template<typename TValue>

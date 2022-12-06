@@ -10,6 +10,10 @@
 #include <SciPP/Core/types.hpp>
 
 
+#include <SciPP/Core/Vec.hpp>
+#include <SciPP/Core/Mat.hpp>
+
+
 #include <SciPP/Core/misc.hpp>
 
 #include <SciPP/Core/BigInt.hpp>

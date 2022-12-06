@@ -32,71 +32,93 @@
 
 namespace scp
 {
-	template<typename T> concept IsComplex = requires { typename T::value_type; } && std::same_as<std::complex<typename T::value_type>, T>;
+	template<typename T> concept CNumber = std::integral<T> || std::floating_point<T>;
+	template<typename T> concept CComplex = requires { typename T::value_type; } && std::same_as<std::complex<typename T::value_type>, T>;
 
-	template<typename T1, typename T2, typename R> concept Addable = requires (T1 x1, T2 x2)
+	template<typename T1, typename T2, typename R> concept CAddable = requires (T1 x1, T2 x2)
 	{
 		{ x1 + x2 } -> std::convertible_to<R>;
 	};
-	template<typename T1, typename T2, typename R> concept Substractable = requires (T1 x1, T2 x2)
+	template<typename T1, typename T2, typename R> concept CSubstractable = requires (T1 x1, T2 x2)
 	{
 		{ x1 - x2 } -> std::convertible_to<R>;
 	};
-	template<typename T1, typename T2, typename R> concept Multipliable = requires (T1 x1, T2 x2)
+	template<typename T1, typename T2, typename R> concept CMultipliable = requires (T1 x1, T2 x2)
 	{
 		{ x1* x2 } -> std::convertible_to<R>;
 	};
-	template<typename T1, typename T2, typename R> concept Divisible = requires (T1 x1, T2 x2)
+	template<typename T1, typename T2, typename R> concept CDivisible = requires (T1 x1, T2 x2)
 	{
 		{ x1 / x2 } -> std::convertible_to<R>;
 	};
 
-	template<typename T> concept Monoid =
-		Multipliable<T, T, T>
+	template<typename T> concept CMonoid =
+		CMultipliable<T, T, T>
 		&& requires (T x)
 	{
 		x = 1;
 	};
-	template<typename T> concept CommutativeMonoid =
-		Addable<T, T, T>
+	template<typename T> concept CCommutativeMonoid =
+		CAddable<T, T, T>
 		&& requires (T x)
 	{
 		x = 0;
 	};
 
-	template<typename T> concept Group =
-		Monoid<T>
-		&& Divisible<T, T, T>;
-	template<typename T> concept CommutativeGroup =
-		CommutativeMonoid<T>
-		&& Substractable<T, T, T>;
+	template<typename T> concept CGroup =
+		CMonoid<T>
+		&& CDivisible<T, T, T>;
+	template<typename T> concept CCommutativeGroup =
+		CCommutativeMonoid<T>
+		&& CSubstractable<T, T, T>;
 
-	template<typename T> concept Ring =
-		CommutativeGroup<T>
-		&& Monoid<T>;
+	template<typename T> concept CRing =
+		CCommutativeGroup<T>
+		&& CMonoid<T>;
 
-	template<typename T> concept Field =
-		Ring<T>
-		&& Divisible<T, T, T>;
+	template<typename T> concept CField =
+		CRing<T>
+		&& CDivisible<T, T, T>;
 
-	template<typename T, typename R> concept Module =
-		CommutativeGroup<T>
-		&& Ring<R>
-		&& Multipliable<T, R, T>
-		&& Multipliable<R, T, T>
-		&& Divisible<T, R, T>
-		&& Divisible<R, T, T>;
+	template<typename T, typename R> concept CModule =
+		CCommutativeGroup<T>
+		&& CRing<R>
+		&& CMultipliable<T, R, T>
+		&& CMultipliable<R, T, T>
+		&& CDivisible<T, R, T>
+		&& CDivisible<R, T, T>;
 
-	template<typename T, typename F> concept VectorSpace =
-		Module<T, F>
-		&& Field<F>;
+	template<typename T, typename F> concept CVectorSpace =
+		CModule<T, F>
+		&& CField<F>;
 
-	template<typename T, typename F> concept Algebra =
-		VectorSpace<T, F>
-		&& Monoid<T>;
-	template<typename T, typename F> concept DivisionAlgebra =
-		VectorSpace<T, F>
-		&& Group<T>;
+	template<typename T, typename F> concept CAlgebra =
+		CVectorSpace<T, F>
+		&& CMonoid<T>;
+	template<typename T, typename F> concept CDivisionAlgebra =
+		CVectorSpace<T, F>
+		&& CGroup<T>;
+
+
+	struct fvec2; struct fvec3; struct fvec4;
+	struct dvec2; struct dvec3; struct dvec4;
+	struct u8vec2; struct u8vec3; struct u8vec4;
+	struct u16vec2; struct u16vec3; struct u16vec4;
+	struct u32vec2; struct u32vec3; struct u32vec4;
+	struct u64vec2; struct u64vec3; struct u64vec4;
+	struct i8vec2; struct i8vec3; struct i8vec4;
+	struct i16vec2; struct i16vec3; struct i16vec4;
+	struct i32vec2; struct i32vec3; struct i32vec4;
+	struct i64vec2; struct i64vec3; struct i64vec4;
+	struct bvec2; struct bvec3; struct bvec4;
+
+	namespace _scp { template<typename TValue, uint8_t Row, uint8_t Col, typename TRow> class Mat; }
+	using fmat2x2 = _scp::Mat<float, 2, 2, fvec2>; using fmat2x3 = _scp::Mat<float, 2, 3, fvec3>; using fmat2x4 = _scp::Mat<float, 2, 4, fvec4>;
+	using fmat3x2 = _scp::Mat<float, 3, 2, fvec2>; using fmat3x3 = _scp::Mat<float, 3, 3, fvec3>; using fmat3x4 = _scp::Mat<float, 3, 4, fvec4>;
+	using fmat4x2 = _scp::Mat<float, 4, 2, fvec2>; using fmat4x3 = _scp::Mat<float, 4, 3, fvec3>; using fmat4x4 = _scp::Mat<float, 4, 4, fvec4>;
+	using dmat2x2 = _scp::Mat<double, 2, 2, dvec2>; using dmat2x3 = _scp::Mat<double, 2, 3, dvec3>; using dmat2x4 = _scp::Mat<double, 2, 4, dvec4>;
+	using dmat3x2 = _scp::Mat<double, 3, 2, dvec2>; using dmat3x3 = _scp::Mat<double, 3, 3, dvec3>; using dmat3x4 = _scp::Mat<double, 3, 4, dvec4>;
+	using dmat4x2 = _scp::Mat<double, 4, 2, dvec2>; using dmat4x3 = _scp::Mat<double, 4, 3, dvec3>; using dmat4x4 = _scp::Mat<double, 4, 4, dvec4>;
 
 
 	template<typename TBase, typename TBuffer> class BigInt;
@@ -110,12 +132,12 @@ namespace scp
 	struct TensorShape;
 	enum class BorderBehaviour;
 	enum class InterpolationMethod;
-	template<typename T> concept UntypedTensorConcept = requires { typename T::ValueType; };	// TODO: Better than that
-	template<typename T> concept UntypedMatrixConcept = requires { typename T::Super; typename T::IsMatrix; }&& UntypedTensorConcept<typename T::Super>;
-	template<typename T> concept UntypedVectorConcept = requires { typename T::Super; typename T::IsVector; }&& UntypedTensorConcept<typename T::Super>;
-	template<typename T, typename TValue> concept TensorConcept = UntypedTensorConcept<T> && std::same_as<TValue, typename T::ValueType>;
-	template<typename T, typename TValue> concept MatrixConcept = UntypedMatrixConcept<T> && std::same_as<TValue, typename T::Super::ValueType>;
-	template<typename T, typename TValue> concept VectorConcept = UntypedVectorConcept<T> && std::same_as<TValue, typename T::Super::ValueType>;
+	template<typename T> concept CUntypedTensor = requires { typename T::ValueType; };	// TODO: Better than that
+	template<typename T> concept CUntypedMatrix = requires { typename T::Super; typename T::IsMatrix; }&& CUntypedTensor<typename T::Super>;
+	template<typename T> concept CUntypedVector = requires { typename T::Super; typename T::IsVector; }&& CUntypedTensor<typename T::Super>;
+	template<typename T, typename TValue> concept CTensor = CUntypedTensor<T> && std::same_as<TValue, typename T::ValueType>;
+	template<typename T, typename TValue> concept CMatrix = CUntypedMatrix<T> && std::same_as<TValue, typename T::Super::ValueType>;
+	template<typename T, typename TValue> concept CVector = CUntypedVector<T> && std::same_as<TValue, typename T::Super::ValueType>;
 
 	template<typename TValue> class Tensor;
 	template<typename TValue> class Matrix;

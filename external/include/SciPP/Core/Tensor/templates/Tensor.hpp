@@ -54,77 +54,77 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr Tensor<TValue>& Tensor<TValue>::fill(const TValue& value)
+	constexpr void Tensor<TValue>::fill(const TValue& value)
 	{
 		std::fill_n(_values, _length, value);
-		return *this;
 	}
 
 	template<typename TValue>
 	template<std::input_iterator TInput>
-	constexpr Tensor<TValue>& Tensor<TValue>::copy(TInput it)
+	constexpr void Tensor<TValue>::copy(TInput it)
 	{
 		std::copy_n(it, _length, _values);
-		return *this;
 	}
 
 	template<typename TValue>
-	constexpr Tensor<TValue>& Tensor<TValue>::transform(const std::function<TValue(const TValue&)>& unaryOp)
+	constexpr void Tensor<TValue>::transform(const std::function<TValue(const TValue&)>& unaryOp)
 	{
 		std::transform(_values, _values + _length, _values, unaryOp);
-		return *this;
 	}
 
 	template<typename TValue>
 	template<std::input_iterator TInput>
-	constexpr Tensor<TValue>& Tensor<TValue>::transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp)
+	constexpr void Tensor<TValue>::transform(TInput it, const std::function<TValue(const TValue&, const typename std::iterator_traits<TInput>::value_type&)>& binaryOp)
 	{
 		std::transform(_values, _values + _length, it, _values, binaryOp);
-		return *this;
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator+=(const TTensor& tensor)
 	{
 		assert(_order == tensor.getOrder());
 		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
 
-		return transform(tensor.begin(), std::plus<TValue>());
+		transform(tensor.begin(), std::plus<TValue>());
+		return *this;
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator-=(const TTensor& tensor)
 	{
 		assert(_order == tensor.getOrder());
 		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
 
-		return transform(tensor.begin(), std::minus<TValue>());
+		transform(tensor.begin(), std::minus<TValue>());
+		return *this;
 	}
 
 	template<typename TValue>
 	template<typename TScalar>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator*=(const TScalar& scalar)
 	{
-		return transform([&](const TValue& x) { return x * scalar; });
+		transform([&](const TValue& x) { return x * scalar; });
+		return *this;
 	}
 
 	template<typename TValue>
 	template<typename TScalar>
 	constexpr Tensor<TValue>& Tensor<TValue>::operator/=(const TScalar& scalar)
 	{
-		return transform([&](const TValue& x) { return x / scalar; });
+		transform([&](const TValue& x) { return x / scalar; });
+		return *this;
 	}
 
 	template<typename TValue>
-	constexpr Tensor<TValue>& Tensor<TValue>::negate()
+	constexpr void Tensor<TValue>::negate()
 	{
-		return transform(std::negate<TValue>());
+		transform(std::negate<TValue>());
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB>
 	constexpr void Tensor<TValue>::tensorProduct(const TTensorA& tensorA, const TTensorB& tensorB)
 	{
 		const uint64_t orderA = tensorA.getOrder();
@@ -152,19 +152,19 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
-	constexpr Tensor<TValue>& Tensor<TValue>::hadamardProduct(const TTensor& tensor)
+	template<CTensor<TValue> TTensor>
+	constexpr void Tensor<TValue>::hadamardProduct(const TTensor& tensor)
 	{
 		assert(_order == tensor.getOrder());
 		assert(std::equal(_sizes, _sizes + _order, tensor.getSizes()));
 
-		return transform(tensor.begin(), std::multiplies<TValue>());
+		transform(tensor.begin(), std::multiplies<TValue>());
 	}
 
 	template<typename TValue>
-	constexpr Tensor<TValue>& Tensor<TValue>::fft()
+	constexpr void Tensor<TValue>::fft()
 	{
-		if constexpr (IsComplex<TValue>)
+		if constexpr (CComplex<TValue>)
 		{
 			TValue** bases = new TValue*[_order];
 			for (uint64_t i = 0; i < _order; ++i)
@@ -191,14 +191,12 @@ namespace scp
 		{
 			assert(false);
 		}
-
-		return *this;
 	}
 
 	template<typename TValue>
-	constexpr Tensor<TValue>& Tensor<TValue>::ifft()
+	constexpr void Tensor<TValue>::ifft()
 	{
-		if constexpr (IsComplex<TValue>)
+		if constexpr (CComplex<TValue>)
 		{
 			TValue** bases = new TValue * [_order];
 			for (uint64_t i = 0; i < _order; ++i)
@@ -227,13 +225,11 @@ namespace scp
 		{
 			assert(false);
 		}
-
-		return *this;
 	}
 
 	template<typename TValue>
-	template<BorderBehaviour BBehaviour, TensorConcept<TValue> TTensor>
-	constexpr Tensor<TValue>& Tensor<TValue>::convolution(const TTensor& kernel)
+	template<BorderBehaviour BBehaviour, CTensor<TValue> TTensor>
+	constexpr void Tensor<TValue>::convolution(const TTensor& kernel)
 	{
 		assert(_order == kernel.getOrder());
 		
@@ -306,13 +302,11 @@ namespace scp
 		
 			_values[pos.index] = value;
 		}
-		
-		return *this;
 	}
 
 	namespace _scp
 	{
-		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
+		template<typename TValue, CTensor<TValue> TTensor, typename TScalar>
 		constexpr TValue lerp(const TTensor& tensor, const uint64_t& order, const uint64_t* sizes, uint64_t* indices, const TScalar* coeffs, uint64_t n)
 		{
 			if (n == order)
@@ -348,7 +342,7 @@ namespace scp
 			}
 		}
 
-		template<typename TValue, TensorConcept<TValue> TTensor, typename TScalar>
+		template<typename TValue, CTensor<TValue> TTensor, typename TScalar>
 		constexpr TValue cerp(const TTensor& tensor, const uint64_t& order, const uint64_t* sizes, uint64_t* indices, const TScalar* coeffs, uint64_t n)
 		{
 			if (n == order)
@@ -410,7 +404,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<typename TScalar, InterpolationMethod IMethod, TensorConcept<TValue> TTensor>
+	template<typename TScalar, InterpolationMethod IMethod, CTensor<TValue> TTensor>
 	constexpr void Tensor<TValue>::interpolation(const TTensor& tensor)
 	{
 		const TensorShape shape{ _order, _sizes };
@@ -452,7 +446,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Tensor<TValue>::tensorContraction(const TTensor& tensor, uint64_t i, uint64_t j)
 	{
 		const TensorShape shape{ _order, _sizes };
@@ -501,7 +495,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr bool Tensor<TValue>::operator==(const TTensor& tensor) const
 	{
 		if (_order != tensor.getOrder())
@@ -518,14 +512,14 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr bool Tensor<TValue>::operator!=(const TTensor& tensor) const
 	{
 		return !operator==(tensor);
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr TValue Tensor<TValue>::innerProduct(const TTensor& tensor) const
 	{
 		assert(_order == tensor.getOrder());
@@ -556,50 +550,36 @@ namespace scp
 	template<BorderBehaviour BBehaviour>
 	constexpr const TValue& Tensor<TValue>::getOutOfBound(const int64_t* indices) const
 	{
-		uint64_t* realIndices = reinterpret_cast<uint64_t*>(alloca(sizeof(uint64_t) * _order));
-
 		if constexpr (BBehaviour == BorderBehaviour::Zero)
 		{
 			static constexpr TValue zero = 0;
 
-			bool isOut = false;
-			for (uint64_t i = 0; !isOut && i < _order; ++i)
+			for (uint64_t i = 0; i < _order; ++i)
 			{
-				isOut = indices[i] < 0 || indices[i] >= _sizes[i];
+				if (indices[i] < 0 || indices[i] >= _sizes[i])
+				{
+					return zero;
+				}
 			}
 
-			if (isOut)
-			{
-				return zero;
-			}
-			else
-			{
-				std::copy_n(indices, _order, realIndices);
-				return get(realIndices);
-			}
+			return get(reinterpret_cast<const uint64_t*>(indices));
 		}
 		else if constexpr (BBehaviour == BorderBehaviour::Continuous)
 		{
+			uint64_t* realIndices = reinterpret_cast<uint64_t*>(alloca(sizeof(uint64_t) * _order));
+
 			for (uint64_t i = 0; i < _order; ++i)
 			{
-				if (indices[i] < 0)
-				{
-					realIndices[i] = 0;
-				}
-				else if (indices[i] < _sizes[i])
-				{
-					realIndices[i] = indices[i];
-				}
-				else
-				{
-					realIndices[i] = _sizes[i] - 1;
-				}
+				realIndices[i] = indices[i] & -(indices[i] > 0);
+				realIndices[i] = (realIndices[i] | -(realIndices[i] >= _sizes[i])) & ((_sizes[i] - 1) | -(realIndices[i] < _sizes[i]));
 			}
 
 			return get(realIndices);
 		}
 		else if constexpr (BBehaviour == BorderBehaviour::Periodic)
 		{
+			uint64_t* realIndices = reinterpret_cast<uint64_t*>(alloca(sizeof(uint64_t) * _order));
+
 			for (uint64_t i = 0; i < _order; ++i)
 			{
 				if (indices[i] < 0)
@@ -644,7 +624,7 @@ namespace scp
 				indices[i] = 0;
 				coeffs[i] = 0;
 			}
-			else if (scalarIndices[i] > _sizes[i] - 1)
+			else if (scalarIndices[i] >= _sizes[i])
 			{
 				indices[i] = _sizes[i] - 1;
 				coeffs[i] = 0;
@@ -872,7 +852,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Tensor<TValue>::_copyFrom(const TTensor& tensor)
 	{
 		const uint64_t tensorOrder = tensor.getOrder();
@@ -888,7 +868,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
+	template<CTensor<TValue> TTensor>
 	constexpr void Tensor<TValue>::_moveFrom(TTensor&& tensor)
 	{
 		if constexpr (!std::derived_from<TTensor, Tensor<TValue>>)
@@ -1229,7 +1209,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB>
 	constexpr void Matrix<TValue>::matrixProduct(const TTensorA& matrixA, const TTensorB& matrixB)
 	{
 		const uint64_t* sizesA = matrixA.getSizes();
@@ -1257,7 +1237,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	constexpr Matrix<TValue>& Matrix<TValue>::transpose()
+	constexpr void Matrix<TValue>::transpose()
 	{
 		if (_sizes[0] == _sizes[1])
 		{
@@ -1316,12 +1296,10 @@ namespace scp
 
 			std::swap(_sizes[0], _sizes[1]);
 		}
-
-		return *this;
 	}
 
 	template<typename TValue>
-	constexpr Matrix<TValue>& Matrix<TValue>::inverse()
+	constexpr void Matrix<TValue>::inverse()
 	{
 		assert(_sizes[0] == _sizes[1]);
 
@@ -1421,8 +1399,6 @@ namespace scp
 				}
 			}
 		}
-
-		return *this;
 	}
 
 	template<typename TValue>
@@ -1522,7 +1498,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB>
 	constexpr void Vector<TValue>::rightMatrixProduct(const TTensorA& vector, const TTensorB& matrix) const
 	{
 		assert(vector.getOrder() == 1);
@@ -1552,7 +1528,7 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensorA, TensorConcept<TValue> TTensorB>
+	template<CTensor<TValue> TTensorA, CTensor<TValue> TTensorB>
 	constexpr void Vector<TValue>::leftMatrixProduct(const TTensorA& matrix, const TTensorB& vector) const
 	{
 		assert(vector.getOrder() == 1);
@@ -1580,8 +1556,8 @@ namespace scp
 	}
 
 	template<typename TValue>
-	template<TensorConcept<TValue> TTensor>
-	constexpr Vector<TValue>& Vector<TValue>::crossProduct(const TTensor& vector)
+	template<CTensor<TValue> TTensor>
+	constexpr void Vector<TValue>::crossProduct(const TTensor& vector)
 	{
 		assert(_length == 3);
 		assert(vector.getOrder() == 1);
@@ -1598,7 +1574,5 @@ namespace scp
 		_values[0] = yA * zB - zA * yB;
 		_values[1] = zA * xB - xA * zB;
 		_values[2] = xA * yB - yA * xB;
-		
-		return *this;
 	}
 }

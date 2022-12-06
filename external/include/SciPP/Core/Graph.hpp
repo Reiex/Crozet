@@ -40,8 +40,8 @@ namespace scp
 			std::vector<uint64_t> getEdges(uint64_t nodeIdFrom = -1, uint64_t nodeIdTo = -1) const;
 			const std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::vector<uint64_t>>>& getEdgeMap() const;
 
-			template<TensorConcept<TEdge> TTensor> void setFromAdjacencyMatrix(const TTensor& matrix, const std::vector<TNode>& nodeValues);
-			template<TensorConcept<TEdge> TTensor> void getAdjacencyMatrix(TTensor& matrix, std::vector<TNode>& nodeValues) const;
+			template<CTensor<TEdge> TTensor> void setFromAdjacencyMatrix(const TTensor& matrix, const std::vector<TNode>& nodeValues);
+			template<CTensor<TEdge> TTensor> void getAdjacencyMatrix(TTensor& matrix, std::vector<TNode>& nodeValues) const;
 
 			struct PathfindingResult
 			{

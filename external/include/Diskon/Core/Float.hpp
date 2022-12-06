@@ -1,9 +1,17 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//! \file
+//! \author Reiex
+//! \copyright The MIT License (MIT)
+//! \date 2019-2022
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #include <Diskon/Core/types.hpp>
 
 namespace dsk
 {
+	#pragma pack(push, 1)
 	template<uint8_t ExpSize, uint8_t MantissaSize>
 	class Float
 	{
@@ -39,6 +47,7 @@ namespace dsk
 
 			unsigned char _data[_byteSize];
 	};
+	#pragma pack(pop)
 }
 
 namespace std

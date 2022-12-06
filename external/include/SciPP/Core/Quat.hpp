@@ -38,15 +38,15 @@ namespace scp
 			constexpr bool operator!=(const Quat<TValue>& q) const;
 
 			constexpr void setFromRotationAxisAngle(const std::initializer_list<TValue>& axis, const TValue& angle);
-			template<TensorConcept<TValue> TTensor> constexpr void setFromRotationAxisAngle(const TTensor& axis, const TValue& angle);
-			template<TensorConcept<TValue> TTensor> constexpr void getRotationAxisAngle(TTensor& axis, TValue& angle);
+			template<CTensor<TValue> TTensor> constexpr void setFromRotationAxisAngle(const TTensor& axis, const TValue& angle);
+			template<CTensor<TValue> TTensor> constexpr void getRotationAxisAngle(TTensor& axis, TValue& angle);
 
 			constexpr void setFromRotationMatrix(const std::initializer_list<TValue>& matrix);
-			template<TensorConcept<TValue> TTensor> constexpr void setFromRotationMatrix(const TTensor& matrix);
-			template<TensorConcept<TValue> TTensor> constexpr void getRotationMatrix(TTensor& matrix) const;
+			template<CTensor<TValue> TTensor> constexpr void setFromRotationMatrix(const TTensor& matrix);
+			template<CTensor<TValue> TTensor> constexpr void getRotationMatrix(TTensor& matrix) const;
 
-			constexpr Quat<TValue>& inverse();
-			constexpr Quat<TValue>& conjugate();
+			constexpr void inverse();
+			constexpr void conjugate();
 			constexpr TValue normSq() const;
 			constexpr TValue norm() const;
 

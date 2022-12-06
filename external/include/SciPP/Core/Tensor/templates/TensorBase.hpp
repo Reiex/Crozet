@@ -162,7 +162,7 @@ namespace scp
 		return TensorShapeIterator(this, true);
 	}
 
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator+(const TTensor& a, const TTensor& b)
 	{
 		TTensor c(a);
@@ -170,28 +170,28 @@ namespace scp
 		return c;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator+(TTensor&& a, const TTensor& b)
 	{
 		a += b;
 		return std::forward<TTensor>(a);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator+(const TTensor& a, TTensor&& b)
 	{
 		b += a;
 		return std::forward<TTensor>(b);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator+(TTensor&& a, TTensor&& b)
 	{
 		a += b;
 		return std::forward<TTensor>(a);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator-(const TTensor& a, const TTensor& b)
 	{
 		TTensor c(a);
@@ -199,28 +199,28 @@ namespace scp
 		return c;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator-(TTensor&& a, const TTensor& b)
 	{
 		a -= b;
 		return std::forward<TTensor>(a);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator-(const TTensor& a, TTensor&& b)
 	{
 		b -= a;
 		return -std::forward<TTensor>(b);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator-(TTensor&& a, TTensor&& b)
 	{
 		a -= b;
 		return std::forward<TTensor>(a);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator*(const TTensor& tensor, const typename TTensor::ValueType& value)
 	{
 		TTensor result(tensor);
@@ -228,14 +228,14 @@ namespace scp
 		return result;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator*(TTensor&& tensor, const typename TTensor::ValueType& value)
 	{
 		tensor *= value;
 		return std::forward<TTensor>(tensor);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator*(const typename TTensor::ValueType& value, const TTensor& tensor)
 	{
 		TTensor result(tensor);
@@ -243,14 +243,14 @@ namespace scp
 		return result;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator*(const typename TTensor::ValueType& value, TTensor&& tensor)
 	{
 		tensor *= value;
 		return std::forward<TTensor>(tensor);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator/(const TTensor& tensor, const typename TTensor::ValueType& value)
 	{
 		TTensor result(tensor);
@@ -258,14 +258,14 @@ namespace scp
 		return result;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator/(TTensor&& tensor, const typename TTensor::ValueType& value)
 	{
 		tensor /= value;
 		return std::forward<TTensor>(tensor);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator-(const TTensor& tensor)
 	{
 		TTensor result(tensor);
@@ -273,26 +273,26 @@ namespace scp
 		return result;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator-(TTensor&& tensor)
 	{
 		tensor.negate();
 		return std::forward<TTensor>(tensor);
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor operator+(const TTensor& tensor)
 	{
 		return tensor;
 	}
 	
-	template<UntypedTensorConcept TTensor>
+	template<CUntypedTensor TTensor>
 	constexpr TTensor&& operator+(TTensor&& tensor)
 	{
 		return std::forward<TTensor>(tensor);
 	}
 
-	template<UntypedMatrixConcept TMatrix>
+	template<CUntypedMatrix TMatrix>
 	TMatrix operator*(const TMatrix& a, const TMatrix& b)
 	{
 		TMatrix c(a.getSize(0), b.getSize(1));
@@ -300,7 +300,7 @@ namespace scp
 		return c;
 	}
 
-	template<UntypedVectorConcept TVector, UntypedMatrixConcept TMatrix>
+	template<CUntypedVector TVector, CUntypedMatrix TMatrix>
 	TVector operator*(const TVector& vector, const TMatrix& matrix)
 	{
 		TVector result(matrix.getSize(1));
@@ -308,7 +308,7 @@ namespace scp
 		return result;
 	}
 
-	template<UntypedMatrixConcept TMatrix, UntypedVectorConcept TVector>
+	template<CUntypedMatrix TMatrix, CUntypedVector TVector>
 	TVector operator*(const TMatrix& matrix, const TVector& vector)
 	{
 		TVector result(matrix.getSize(0));
