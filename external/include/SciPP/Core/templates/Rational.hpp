@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/Rational.hpp>
+#include <SciPP/Core/CoreDecl.hpp>
 
 namespace scp
 {

@@ -2,13 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/types.hpp>
-#include <SciPP/Core/Tensor/TensorShape.hpp>
+#include <SciPP/Core/CoreTypes.hpp>
 
 #pragma region scpTensorMacros
 
@@ -16,6 +15,7 @@
 																														\
 public:																													\
 																														\
+	using IsTensor = bool;																								\
 	using ValueType = TValue;																							\
 																														\
 	constexpr TensorName(uint64_t order, const uint64_t* sizes);														\
@@ -28,12 +28,12 @@ public:																													\
 	constexpr TensorName(const std::initializer_list<uint64_t>& sizes, const std::initializer_list<TValue>& values);	\
 	constexpr TensorName(const This& tensor);																			\
 	constexpr TensorName(This&& tensor);																				\
-	template<CTensor<TValue> TTensor> constexpr TensorName(const TTensor& tensor);								\
-	template<CTensor<TValue> TTensor> constexpr TensorName(TTensor&& tensor);										\
+	template<CTensor<TValue> TTensor> constexpr TensorName(const TTensor& tensor);										\
+	template<CTensor<TValue> TTensor> constexpr TensorName(TTensor&& tensor);											\
 																														\
 	constexpr This& operator=(const This& tensor);																		\
 	constexpr This& operator=(This&& tensor);																			\
-	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);							\
+	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);									\
 	template<CTensor<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
 
 
@@ -102,14 +102,14 @@ constexpr This::TensorName(This&& tensor) : This()																														
 }																																										\
 																																										\
 TemplateDecl																																							\
-template<CTensor<TValue> TTensor>																																	\
+template<CTensor<TValue> TTensor>																																		\
 constexpr This::TensorName(const TTensor& tensor) : This()																												\
 {																																										\
 	_copyFrom(tensor);																																					\
 }																																										\
 																																										\
 TemplateDecl																																							\
-template<CTensor<TValue> TTensor>																																	\
+template<CTensor<TValue> TTensor>																																		\
 constexpr This::TensorName(TTensor&& tensor) : This()																													\
 {																																										\
 	_moveFrom(std::forward<TTensor>(tensor));																															\
@@ -130,7 +130,7 @@ constexpr This& This::operator=(This&& tensor)																															\
 }																																										\
 																																										\
 TemplateDecl																																							\
-template<CTensor<TValue> TTensor>																																	\
+template<CTensor<TValue> TTensor>																																		\
 constexpr This& This::operator=(const TTensor& tensor)																													\
 {																																										\
 	_copyFrom(tensor);																																					\
@@ -138,7 +138,7 @@ constexpr This& This::operator=(const TTensor& tensor)																										
 }																																										\
 																																										\
 TemplateDecl																																							\
-template<CTensor<TValue> TTensor>																																	\
+template<CTensor<TValue> TTensor>																																		\
 constexpr This& This::operator=(TTensor&& tensor)																														\
 {																																										\
 	_moveFrom(std::forward<TTensor>(tensor));																															\
@@ -160,12 +160,12 @@ public:																								\
 	constexpr MatrixName(uint64_t row, uint64_t col, const std::initializer_list<TValue>& values);	\
 	constexpr MatrixName(const This& matrix);														\
 	constexpr MatrixName(This&& matrix);															\
-	template<CTensor<TValue> TTensor> constexpr MatrixName(const TTensor& tensor);			\
-	template<CTensor<TValue> TTensor> constexpr MatrixName(TTensor&& tensor);					\
+	template<CTensor<TValue> TTensor> constexpr MatrixName(const TTensor& tensor);					\
+	template<CTensor<TValue> TTensor> constexpr MatrixName(TTensor&& tensor);						\
 																									\
 	constexpr This& operator=(const This& matrix);													\
 	constexpr This& operator=(This&& matrix);														\
-	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);		\
+	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);				\
 	template<CTensor<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
 
 
@@ -202,14 +202,14 @@ constexpr This::MatrixName(This&& matrix) : Super(std::forward<This>(matrix))			
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This::MatrixName(const TTensor& tensor) : Super(tensor)																	\
 {																																	\
 	assert(tensor.getOrder() == 2);																									\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This::MatrixName(TTensor&& tensor) : Super(std::forward<TTensor>(tensor))													\
 {																																	\
 	assert(tensor.getOrder() == 2);																									\
@@ -228,7 +228,7 @@ constexpr This& This::operator=(This&& matrix)																						\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This& This::operator=(const TTensor& tensor)																				\
 {																																	\
 	assert(tensor.getOrder() == 2);																									\
@@ -236,7 +236,7 @@ constexpr This& This::operator=(const TTensor& tensor)																				\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This& This::operator=(TTensor&& tensor)																					\
 {																																	\
 	assert(tensor.getOrder() == 2);																									\
@@ -258,12 +258,12 @@ public:																								\
 	constexpr VectorName(const std::initializer_list<TValue>& values);								\
 	constexpr VectorName(const This& vector);														\
 	constexpr VectorName(This&& vector);															\
-	template<CTensor<TValue> TTensor> constexpr VectorName(const TTensor& tensor);			\
-	template<CTensor<TValue> TTensor> constexpr VectorName(TTensor&& tensor);					\
+	template<CTensor<TValue> TTensor> constexpr VectorName(const TTensor& tensor);					\
+	template<CTensor<TValue> TTensor> constexpr VectorName(TTensor&& tensor);						\
 																									\
 	constexpr This& operator=(const This& vector);													\
 	constexpr This& operator=(This&& vector);														\
-	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);		\
+	template<CTensor<TValue> TTensor> constexpr This& operator=(const TTensor& tensor);				\
 	template<CTensor<TValue> TTensor> constexpr This& operator=(TTensor&& tensor);
 
 
@@ -300,14 +300,14 @@ constexpr This::VectorName(This&& vector) : Super(std::forward<This>(vector))			
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This::VectorName(const TTensor& tensor) : Super(tensor)																	\
 {																																	\
 	assert(tensor.getOrder() == 1);																									\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This::VectorName(TTensor&& tensor) : Super(std::forward<TTensor>(tensor))													\
 {																																	\
 	assert(tensor.getOrder() == 1);																									\
@@ -326,7 +326,7 @@ constexpr This& This::operator=(This&& vector)																						\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This& This::operator=(const TTensor& tensor)																				\
 {																																	\
 	assert(tensor.getOrder() == 1);																									\
@@ -334,7 +334,7 @@ constexpr This& This::operator=(const TTensor& tensor)																				\
 }																																	\
 																																	\
 TemplateDecl																														\
-template<CTensor<TValue> TTensor>																								\
+template<CTensor<TValue> TTensor>																									\
 constexpr This& This::operator=(TTensor&& tensor)																					\
 {																																	\
 	assert(tensor.getOrder() == 1);																									\
@@ -457,5 +457,3 @@ namespace scp
 	template<CUntypedMatrix TMatrix, CUntypedVector TVector>
 	TVector operator*(const TMatrix& matrix, const TVector& vector);
 }
-
-#include <SciPP/Core/Tensor/templates/TensorBase.hpp>

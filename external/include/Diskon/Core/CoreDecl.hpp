@@ -7,16 +7,14 @@
 
 #pragma once
 
-#include <Crozet/Core/CoreDecl.hpp>
+#include <Diskon/Core/CoreTypes.hpp>
 
-namespace crz
-{
-	template<std::derived_from<SoundBase> TSound, typename... Args>
-	uint64_t AudioOutput::createSound(Args&&... args)
-	{
-		assert(isValid());
+#include <Diskon/Core/Conversion.hpp>
 
-		_sounds.emplace(_nextSoundId, new TSound(std::forward<Args>(args)...));
-		return _nextSoundId++;
-	}
-}
+#include <Diskon/Core/Float.hpp>
+#include <Diskon/Core/Int.hpp>
+#include <Diskon/Core/IntSat.hpp>
+
+#include <Diskon/Core/Checksum.hpp>
+
+#include <Diskon/Core/Huffman.hpp>

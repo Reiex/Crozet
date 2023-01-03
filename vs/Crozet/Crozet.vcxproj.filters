@@ -33,7 +33,7 @@
     <ClInclude Include="..\..\include\Crozet\Core\Core.hpp">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Crozet\Core\types.hpp">
+    <ClInclude Include="..\..\include\Crozet\Core\CoreTypes.hpp">
       <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Crozet\Core\AudioOutput.hpp">
@@ -71,6 +71,15 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Crozet\Core\SoundBuffer.hpp">
       <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Crozet\Core\CoreDecl.hpp">
+      <Filter>Header Files\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Crozet\CrozetDecl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Crozet\CrozetTypes.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

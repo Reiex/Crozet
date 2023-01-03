@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Crozet/Core/types.hpp>
+#include <Crozet/Core/CoreTypes.hpp>
 #include <Crozet/Core/SoundSource.hpp>
 #include <Crozet/Core/FilterBase.hpp>
 
@@ -52,5 +52,3 @@ namespace crz
 			std::vector<FilterBase*> _filters;
 	};
 }
-
-#include <Crozet/Core/templates/SoundBase.hpp>

@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2022-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <Diskon/Core/Checksum.hpp>
+#include <Diskon/Core/CoreDecl.hpp>
 
 namespace dsk
 {
@@ -72,5 +72,12 @@ namespace dsk
 				return (b << halfShift) | a;
 			}
 		}
+
+		constexpr _dsk::Crc<uint32_t, 0xEDB88320> crc32;
+
+		constexpr _dsk::Fletcher<uint16_t, uint8_t, 0xFF> fletcher16;
+		constexpr _dsk::Fletcher<uint32_t, uint16_t, 0xFFFF> fletcher32;
+		constexpr _dsk::Fletcher<uint64_t, uint32_t, 0xFFFFFFFF> fletcher64;
+		constexpr _dsk::Fletcher<uint32_t, uint8_t, 65521> adler32;
 	}
 }

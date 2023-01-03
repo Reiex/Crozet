@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2022-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <Diskon/Core/types.hpp>
+#include <Diskon/Core/CoreTypes.hpp>
 
 namespace dsk
 {
@@ -250,5 +250,3 @@ namespace std
 		static constexpr dsk::SignedIntSat<TInt> denorm_min() noexcept { return 0; }
 	};
 }
-
-#include <Diskon/Core/templates/IntSat.hpp>

@@ -2,13 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/types.hpp>
-#include <SciPP/Core/Tensor/TensorBase.hpp>
+#include <SciPP/Core/CoreTypes.hpp>
 
 namespace scp
 {
@@ -74,5 +73,3 @@ namespace scp
 			std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::vector<uint64_t>>> _edgeMap;
 	};
 }
-
-#include <SciPP/Core/templates/Graph.hpp>

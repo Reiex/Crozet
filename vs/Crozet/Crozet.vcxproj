@@ -23,6 +23,7 @@
     <ClInclude Include="..\..\include\Crozet\Core\AudioInput.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\Core.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\AudioOutput.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\CoreDecl.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\FilterBase.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\FilterPlaySpeed.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\SoundBase.hpp" />
@@ -31,8 +32,10 @@
     <ClInclude Include="..\..\include\Crozet\Core\SoundSource.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\templates\AudioOutput.hpp" />
     <ClInclude Include="..\..\include\Crozet\Core\templates\SoundBase.hpp" />
-    <ClInclude Include="..\..\include\Crozet\Core\types.hpp" />
+    <ClInclude Include="..\..\include\Crozet\Core\CoreTypes.hpp" />
     <ClInclude Include="..\..\include\Crozet\Crozet.hpp" />
+    <ClInclude Include="..\..\include\Crozet\CrozetDecl.hpp" />
+    <ClInclude Include="..\..\include\Crozet\CrozetTypes.hpp" />
     <ClInclude Include="..\..\include\Crozet\Private\Private.hpp" />
   </ItemGroup>
   <ItemGroup>

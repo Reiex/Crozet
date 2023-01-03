@@ -7,20 +7,13 @@
 
 #pragma once
 
-#include <Crozet/Core/types.hpp>
+
+#include <Crozet/Core/CoreDecl.hpp>
+
+#include <SciPP/SciPP.hpp>
+#include <Diskon/Diskon.hpp>
 
 
-#include <Crozet/Core/AudioDevice.hpp>
+#include <Crozet/Core/templates/AudioOutput.hpp>
 
-#include <Crozet/Core/AudioOutput.hpp>
-#include <Crozet/Core/AudioInput.hpp>
-
-
-#include <Crozet/Core/SoundSource.hpp>
-
-#include <Crozet/Core/SoundBase.hpp>
-#include <Crozet/Core/SoundFile.hpp>
-#include <Crozet/Core/SoundBuffer.hpp>
-
-#include <Crozet/Core/FilterBase.hpp>
-#include <Crozet/Core/FilterPlaySpeed.hpp>
+#include <Crozet/Core/templates/SoundBase.hpp>

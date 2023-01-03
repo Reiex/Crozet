@@ -2,7 +2,7 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2022-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
@@ -56,6 +56,8 @@ namespace dsk
 }
 
 using float16_t = dsk::Float<5, 10>;
+using float32_t = float;
+using float64_t = double;
 
 using uint24_t = dsk::UnsignedInt<24>;
 using uint40_t = dsk::UnsignedInt<40>;

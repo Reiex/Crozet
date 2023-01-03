@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/types.hpp>
+#include <SciPP/Core/CoreTypes.hpp>
 #include <SciPP/Core/Frac.hpp>
 #include <SciPP/Core/BigInt.hpp>
 
@@ -169,5 +169,3 @@ namespace scp
 	template<typename TInteger>
 	constexpr Rational<TInteger>&& operator+(Rational<TInteger>&& a);
 }
-
-#include <SciPP/Core/templates/Rational.hpp>

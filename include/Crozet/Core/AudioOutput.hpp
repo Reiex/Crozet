@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Crozet/Core/types.hpp>
+#include <Crozet/Core/CoreTypes.hpp>
 
 namespace crz
 {
@@ -74,5 +74,3 @@ namespace crz
 		friend int audioOutputMidCallback(int32_t* output, unsigned long frameCount, AudioOutput* audioOutput);
 	};
 }
-
-#include <Crozet/Core/templates/AudioOutput.hpp>

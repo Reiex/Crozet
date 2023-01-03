@@ -2,13 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/Tensor/Tensor.hpp>
-#include <SciPP/Core/misc.hpp>
+#include <SciPP/Core/CoreDecl.hpp>
 
 namespace scp
 {

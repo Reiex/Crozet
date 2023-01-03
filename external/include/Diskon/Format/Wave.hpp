@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2022-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <Diskon/Format/types.hpp>
+#include <Diskon/Format/FormatTypes.hpp>
 
 namespace dsk
 {
@@ -114,5 +114,3 @@ namespace dsk
 		};
 	}
 }
-
-#include <Diskon/Format/templates/Wave.hpp>

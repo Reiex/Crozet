@@ -2,12 +2,12 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2022-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <Diskon/Core/types.hpp>
+#include <Diskon/Core/CoreTypes.hpp>
 
 namespace dsk
 {
@@ -92,5 +92,3 @@ namespace std
 		static constexpr dsk::Float<ExpSize, MantissaSize> denorm_min() noexcept { return { true, 0, 1 }; }
 	};
 }
-
-#include <Diskon/Core/templates/Float.hpp>

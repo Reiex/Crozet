@@ -2,31 +2,28 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/types.hpp>
+
+#include <SciPP/Core/CoreDecl.hpp>
 
 
-#include <SciPP/Core/Vec.hpp>
-#include <SciPP/Core/Mat.hpp>
+#include <SciPP/Core/templates/misc.hpp>
+
+#include <SciPP/Core/templates/Mat.hpp>
+
+#include <SciPP/Core/templates/BigInt.hpp>
+#include <SciPP/Core/templates/Frac.hpp>
+#include <SciPP/Core/templates/Rational.hpp>
+#include <SciPP/Core/templates/Quat.hpp>
 
 
-#include <SciPP/Core/misc.hpp>
-
-#include <SciPP/Core/BigInt.hpp>
-#include <SciPP/Core/Frac.hpp>
-#include <SciPP/Core/Rational.hpp>
-#include <SciPP/Core/Quat.hpp>
+#include <SciPP/Core/Tensor/templates/TensorBase.hpp>
+#include <SciPP/Core/Tensor/templates/Tensor.hpp>
+#include <SciPP/Core/Tensor/templates/SpTensor.hpp>
 
 
-#include <SciPP/Core/Tensor/TensorShape.hpp>
-#include <SciPP/Core/Tensor/TensorBase.hpp>
-
-#include <SciPP/Core/Tensor/Tensor.hpp>
-#include <SciPP/Core/Tensor/SpTensor.hpp>
-
-
-#include <SciPP/Core/Graph.hpp>
+#include <SciPP/Core/templates/Graph.hpp>

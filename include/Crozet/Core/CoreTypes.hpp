@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include <Diskon/Diskon.hpp>
-#include <SciPP/SciPP.hpp>
+#include <SciPP/SciPPTypes.hpp>
+#include <Diskon/DiskonTypes.hpp>
 
 #include <condition_variable>
 #include <map>

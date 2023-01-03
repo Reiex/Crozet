@@ -2,16 +2,22 @@
 //! \file
 //! \author Reiex
 //! \copyright The MIT License (MIT)
-//! \date 2019-2022
+//! \date 2019-2023
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
-#include <SciPP/Core/types.hpp>
+#include <SciPP/Core/CoreTypes.hpp>
 
 #define SCP_VEC(vecName, vecSize, eltType)						\
 struct vecName##vecSize											\
 {																\
+	using IsVec = bool;											\
+	using ValueType = eltType;									\
+																\
+	static constexpr uint8_t size = vecSize;					\
+																\
+																\
 	SCP_VEC##vecSize##_CONSTRUCTORS(vecName, vecSize, eltType)	\
 	SCP_##vecName##_INTERNAL_OP(vecName, vecSize, eltType)		\
 	SCP_VEC##vecSize##_INTERNAL_FUNC(vecName, vecSize, eltType)	\
@@ -52,10 +58,10 @@ constexpr vecName##4(eltType xValue, const vecName##3& v) : x(xValue), y(v.x), z
 
 // Vec internal operators
 
-#define SCP_fvec_INTERNAL_OP(vecName, vecSize, eltType)				\
+#define SCP_f32vec_INTERNAL_OP(vecName, vecSize, eltType)			\
 SCP_VEC##vecSize##_INTERNAL_OP_ARITH(vecName, vecSize, eltType)
 
-#define SCP_dvec_INTERNAL_OP(vecName, vecSize, eltType)				\
+#define SCP_f64vec_INTERNAL_OP(vecName, vecSize, eltType)			\
 SCP_VEC##vecSize##_INTERNAL_OP_ARITH(vecName, vecSize, eltType)
 
 #define SCP_i8vec_INTERNAL_OP(vecName, vecSize, eltType)			\
@@ -157,11 +163,11 @@ constexpr const eltType& operator[](uint8_t i) const { assert(i < 4); switch (i)
 
 // Vec external operators
 
-#define SCP_fvec_EXTERNAL_OP(vecName, vecSize, eltType) 			\
+#define SCP_f32vec_EXTERNAL_OP(vecName, vecSize, eltType) 			\
 SCP_VEC_EXTERNAL_OP_U_ARITH(vecName, vecSize, eltType)				\
 SCP_VEC##vecSize##_EXTERNAL_OP_S_ARITH(vecName, vecSize, eltType)
 
-#define SCP_dvec_EXTERNAL_OP(vecName, vecSize, eltType) 			\
+#define SCP_f64vec_EXTERNAL_OP(vecName, vecSize, eltType) 			\
 SCP_VEC_EXTERNAL_OP_U_ARITH(vecName, vecSize, eltType)				\
 SCP_VEC##vecSize##_EXTERNAL_OP_S_ARITH(vecName, vecSize, eltType)
 
@@ -279,11 +285,11 @@ constexpr vecName##4 operator&&(eltType x, const vecName##4##& u) { return { x &
 #define SCP_VEC_SPECIAL_FUNC(vecName, vecSize, eltType)		\
 SCP_##vecName##_SPECIAL_FUNC(vecName, vecSize, eltType)
 
-#define SCP_fvec_SPECIAL_FUNC(vecName, vecSize, eltType)	\
+#define SCP_f32vec_SPECIAL_FUNC(vecName, vecSize, eltType)	\
 SCP_VEC##vecSize##_REAL_FUNC(vecName, vecSize, eltType)		\
 SCP_VEC_REAL_FUNC(vecName, vecSize, eltType)
 
-#define SCP_dvec_SPECIAL_FUNC(vecName, vecSize, eltType)	\
+#define SCP_f64vec_SPECIAL_FUNC(vecName, vecSize, eltType)	\
 SCP_VEC##vecSize##_REAL_FUNC(vecName, vecSize, eltType)		\
 SCP_VEC_REAL_FUNC(vecName, vecSize, eltType)
 
@@ -402,13 +408,13 @@ namespace scp
 {
 	#pragma pack(push, 1)
 
-	SCP_VEC(fvec, 2, float);
-	SCP_VEC(fvec, 3, float);
-	SCP_VEC(fvec, 4, float);
+	SCP_VEC(f32vec, 2, float);
+	SCP_VEC(f32vec, 3, float);
+	SCP_VEC(f32vec, 4, float);
 	
-	SCP_VEC(dvec, 2, double);
-	SCP_VEC(dvec, 3, double);
-	SCP_VEC(dvec, 4, double);
+	SCP_VEC(f64vec, 2, double);
+	SCP_VEC(f64vec, 3, double);
+	SCP_VEC(f64vec, 4, double);
 	
 	SCP_VEC(i8vec, 2, int8_t);
 	SCP_VEC(i8vec, 3, int8_t);
@@ -454,8 +460,8 @@ namespace scp
 #undef SCP_VEC2_CONSTRUCTORS
 #undef SCP_VEC3_CONSTRUCTORS
 #undef SCP_VEC4_CONSTRUCTORS
-#undef SCP_fvec_INTERNAL_OP
-#undef SCP_dvec_INTERNAL_OP
+#undef SCP_f32vec_INTERNAL_OP
+#undef SCP_f64vec_INTERNAL_OP
 #undef SCP_i8vec_INTERNAL_OP
 #undef SCP_i16vec_INTERNAL_OP
 #undef SCP_i32vec_INTERNAL_OP
@@ -474,8 +480,8 @@ namespace scp
 #undef SCP_VEC2_INTERNAL_FUNC
 #undef SCP_VEC3_INTERNAL_FUNC
 #undef SCP_VEC4_INTERNAL_FUNC
-#undef SCP_fvec_EXTERNAL_OP
-#undef SCP_dvec_EXTERNAL_OP
+#undef SCP_f32vec_EXTERNAL_OP
+#undef SCP_f64vec_EXTERNAL_OP
 #undef SCP_i8vec_EXTERNAL_OP
 #undef SCP_i16vec_EXTERNAL_OP
 #undef SCP_i32vec_EXTERNAL_OP
@@ -494,8 +500,8 @@ namespace scp
 #undef SCP_VEC3_EXTERNAL_OP_LOGIC
 #undef SCP_VEC4_EXTERNAL_OP_LOGIC
 #undef SCP_VEC_SPECIAL_FUNC
-#undef SCP_fvec_SPECIAL_FUNC
-#undef SCP_dvec_SPECIAL_FUNC
+#undef SCP_f32vec_SPECIAL_FUNC
+#undef SCP_f64vec_SPECIAL_FUNC
 #undef SCP_i8vec_SPECIAL_FUNC
 #undef SCP_i16vec_SPECIAL_FUNC
 #undef SCP_i32vec_SPECIAL_FUNC

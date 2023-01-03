@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Crozet/Core/types.hpp>
+#include <Crozet/Core/CoreTypes.hpp>
 #include <Crozet/Core/SoundSource.hpp>
 
 namespace crz

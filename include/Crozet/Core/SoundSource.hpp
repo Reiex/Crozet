@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <Crozet/Core/types.hpp>
+#include <Crozet/Core/CoreTypes.hpp>
 
 namespace crz
 {
