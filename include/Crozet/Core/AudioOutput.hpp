@@ -11,7 +11,7 @@
 
 namespace crz
 {
-	class AudioOutput
+	class CRZ_API AudioOutput
 	{
 		public:
 

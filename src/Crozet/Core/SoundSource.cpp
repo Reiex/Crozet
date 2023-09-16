@@ -113,7 +113,7 @@ namespace crz
 		scp::Matrix<int32_t>* samplesMatrix = scp::Matrix<int32_t>::createAroundMemory(timeTo - timeFrom, channelCount, samples);
 		scp::Matrix<int32_t>* rawSamplesMatrix = scp::Matrix<int32_t>::createAroundMemory(realTimeTo - realTimeFrom, channelCount, rawSamples);
 
-		samplesMatrix->interpolation<float, scp::InterpolationMethod::Linear>(*rawSamplesMatrix);
+		samplesMatrix->resize<float, scp::InterpolationMethod::Linear>(*rawSamplesMatrix);
 
 		delete samplesMatrix;
 		delete rawSamplesMatrix;

@@ -12,7 +12,7 @@
 
 namespace crz
 {
-	class FilterPlaySpeed : public FilterBase
+	class CRZ_API FilterPlaySpeed : public FilterBase
 	{
 		public:
 

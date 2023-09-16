@@ -11,7 +11,7 @@
 
 namespace crz
 {
-	struct AudioDevice
+	struct CRZ_API AudioDevice
 	{
 		std::string name;
 		int maxInputChannels;

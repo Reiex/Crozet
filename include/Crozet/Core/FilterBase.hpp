@@ -12,7 +12,7 @@
 
 namespace crz
 {
-	class FilterBase : public SoundSource
+	class CRZ_API FilterBase : public SoundSource
 	{
 		public:
 

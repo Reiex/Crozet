@@ -11,7 +11,7 @@
 
 namespace crz
 {
-	class SoundSource
+	class CRZ_API SoundSource
 	{
 		public:
 

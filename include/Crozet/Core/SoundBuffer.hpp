@@ -12,7 +12,7 @@
 
 namespace crz
 {
-	class SoundBuffer : public SoundBase
+	class CRZ_API SoundBuffer : public SoundBase
 	{
 		public:
 

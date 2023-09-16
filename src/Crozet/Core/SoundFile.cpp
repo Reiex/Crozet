@@ -6,20 +6,48 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #include <Crozet/Core/Core.hpp>
+#include <Crozet/Private/Private.hpp>
 
 namespace crz
 {
+	namespace
+	{
+		inline uint64_t crzRead(void* handle, uint8_t* data, uint64_t size)
+		{
+			return std::fread(data, 1, size, reinterpret_cast<std::FILE*>(handle));
+		}
+
+		inline bool crzEof(void* handle)
+		{
+			return std::feof(reinterpret_cast<std::FILE*>(handle));
+		}
+	}
+
 	SoundFile::SoundFile(const std::filesystem::path& path, SoundFileFormat format) : SoundBase(),
 		_format(format),
-		_stream(nullptr)
+		_file(nullptr),
+		_stream(nullptr),
+		_formatStream(nullptr)
 	{
+		if (!std::filesystem::exists(path))
+		{
+			return;
+		}
+
+		_file = std::fopen(path.string().c_str(), "rb");
+		if (!_file)
+		{
+			return;
+		}
+
+		_stream = new dsk::IStream(_file, crzRead, crzEof);
+
 		switch (_format)
 		{
 			case SoundFileFormat::Wave:
 			{
-				dsk::fmt::WaveIStream* waveIStream = new dsk::fmt::WaveIStream();
-				waveIStream->setSource(path);
-
+				dsk::fmt::WaveIStream* waveIStream = new dsk::fmt::WaveIStream(_stream);
+				
 				dsk::fmt::wave::Header header;
 				waveIStream->readHeader(header);
 
@@ -27,7 +55,7 @@ namespace crz
 				_channelCount = header.metadata.channelCount;
 				_sampleCount = header.blockCount;
 
-				_stream = waveIStream;
+				_formatStream = waveIStream;
 
 				break;
 			}
@@ -36,7 +64,7 @@ namespace crz
 
 	void SoundFile::getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo)
 	{
-		if (!_stream->getError())
+		if (!_stream->getStatus())
 		{
 			std::fill_n(samples, (timeTo - timeFrom) * _channelCount, 0);
 			return;
@@ -46,7 +74,7 @@ namespace crz
 		{
 			case SoundFileFormat::Wave:
 			{
-				dsk::fmt::WaveIStream* waveIStream = dynamic_cast<dsk::fmt::WaveIStream*>(_stream);
+				dsk::fmt::WaveIStream* waveIStream = dynamic_cast<dsk::fmt::WaveIStream*>(_formatStream);
 
 				if (timeFrom != _currentSample)
 				{
@@ -63,6 +91,8 @@ namespace crz
 
 	SoundFile::~SoundFile()
 	{
+		delete _formatStream;
 		delete _stream;
+		std::fclose(_file);
 	}
 }

@@ -17,7 +17,7 @@ namespace crz
 		Wave
 	};
 
-	class SoundFile : public SoundBase
+	class CRZ_API SoundFile : public SoundBase
 	{
 		public:
 
@@ -35,6 +35,9 @@ namespace crz
 			void getRawSamples(int32_t* samples, uint64_t timeFrom, uint64_t timeTo) override final;
 
 			SoundFileFormat _format;
-			dsk::fmt::FormatIStream* _stream;
+
+			std::FILE* _file;
+			dsk::IStream* _stream;
+			dsk::fmt::FormatIStream* _formatStream;
 	};
 }
