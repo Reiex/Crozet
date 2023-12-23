@@ -1,10 +1,12 @@
 [submodule "external/SciPP"]
 	path = external/SciPP
 	url = https://github.com/Reiex/SciPP.git
+	branch = master
 [submodule "external/Diskon"]
 	path = external/Diskon
 	url = https://github.com/Reiex/Diskon.git
+	branch = master
 [submodule "external/PortAudio"]
 	path = external/PortAudio
-	url = https://github.com/Reiex/PortAudio.git
-	branch = updated-msvc
+	url = https://github.com/PortAudio/portaudio.git
+	branch = master
