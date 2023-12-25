@@ -15,17 +15,22 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-option(CROZET_LIBRARY_ONLY "Build only the library")
-
 # Add external dependencies
 
-set(SCIPP_LIBRARY_ONLY ON)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/SciPP)
+option(CROZET_ADD_DEPENDENCIES "Add external dependencies to the project" ON)
 
-set(DISKON_LIBRARY_ONLY ON)
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Diskon)
+if(CROZET_ADD_DEPENDENCIES)
 
-add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/PortAudio)
+    set(SCIPP_ADD_EXAMPLES OFF)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/SciPP)
+
+    set(DISKON_ADD_EXAMPLES OFF)
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Diskon)
+
+    add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/PortAudio)
+
+endif()
+
 
 # Crozet
 
@@ -69,7 +74,9 @@ target_link_libraries(
 
 # Crozet examples
 
-if(NOT CROZET_LIBRARY_ONLY)
+option(CROZET_ADD_EXAMPLES "Add target crozet-examples" ON)
+
+if(CROZET_ADD_EXAMPLES)
 
     add_executable(
         crozet-examples
