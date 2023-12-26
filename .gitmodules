@@ -10,3 +10,7 @@
 	path = external/PortAudio
 	url = https://github.com/PortAudio/portaudio.git
 	branch = master
+[submodule "external/Ruc"]
+	path = external/Ruc
+	url = https://github.com/Reiex/Ruc.git
+	branch = master
