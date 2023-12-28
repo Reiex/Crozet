@@ -17,25 +17,26 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # Add external dependencies
 
-option(CROZET_ADD_DEPENDENCIES "Add external dependencies to the project" ON)
-
-if(CROZET_ADD_DEPENDENCIES)
-
+if(NOT TARGET scipp)
     set(SCIPP_ADD_EXAMPLES OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/SciPP)
+endif()
 
+if(NOT TARGET ruc)
     set(RUC_ADD_EXAMPLES OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Ruc)
+endif()
 
+if(NOT TARGET diskon)
     set(DISKON_ADD_EXAMPLES OFF)
-    set(DISKON_ADD_DEPENDENCIES OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/Diskon)
+endif()
 
-    set(PA_BUILD_SHARED_LIBS OFF)
+if(NOT TARGET PortAudio)
+    set(BUILD_SHARED_LIBS ON)
     set(PA_BUILD_SHARED_TESTS OFF)
     set(PA_BUILD_SHARED_EXAMPLES OFF)
     add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/PortAudio)
-
 endif()
 
 # Crozet
@@ -96,7 +97,7 @@ target_compile_definitions(
 target_link_libraries(
     crozet
     diskon
-    PortAudio
+    $<TARGET_LINKER_FILE:PortAudio>
 )
 
 # Crozet examples
@@ -125,7 +126,6 @@ if(CROZET_ADD_EXAMPLES)
 
     target_link_libraries(
         crozet-examples
-        diskon
         crozet
     )
 
